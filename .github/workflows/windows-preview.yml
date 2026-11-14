@@ -23,6 +23,9 @@ jobs:
       CARGO_PROFILE_RELEASE_DEBUG_ASSERTIONS: "true"
       OPENSSL_SRC_PERL: C:\Strawberry\perl\bin\perl.exe
       AWS_LC_SYS_PREBUILT_NASM: "1"
+      # Link the C runtime statically so the binary starts on a Windows 11
+      # machine without the Visual C++ redistributable.
+      RUSTFLAGS: -C target-feature=+crt-static
     steps:
       - uses: actions/checkout@v7
 
