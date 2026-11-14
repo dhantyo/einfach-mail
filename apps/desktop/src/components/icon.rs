@@ -64,6 +64,8 @@ app_icons! {
     Error => CircleX,
     NarrowList => PanelLeftClose,
     WidenList => PanelLeftOpen,
+    OpenNavigation => PanelLeftOpen,
+    CloseNavigation => PanelLeftClose,
     Success => CircleCheck,
     Permissions => ShieldCheck,
     Server => Server,

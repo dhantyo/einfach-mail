@@ -9,8 +9,8 @@ use gpui_kit::component::{
 #[cfg(test)]
 use gpui_kit::test::TestSupportExt as _;
 use gpui_kit::{
-    AnyElement, AsyncApp, Context, Entity, IntoElement, Render, Role, Subscription, Window, div,
-    prelude::*,
+    AnyElement, App, AsyncApp, Context, Entity, IntoElement, Render, Role, SharedString,
+    Subscription, Window, div, prelude::*,
 };
 
 use crate::components::{AppIcon, NavItem};
@@ -21,6 +21,9 @@ use super::{
     MessageMoveStatus, ReadStateUpdateStatus, SyncStatus, WellKnownFolderActionStatus,
     load_folder_snapshot,
 };
+
+/// Builds a folder's [`NavItem`] from its selector, name, and icon.
+type FolderItem = fn(SharedString, SharedString, AppIcon) -> NavItem;
 
 pub(crate) struct MailFolderNavigation {
     mail_view: Entity<MailView>,
@@ -117,7 +120,7 @@ struct NewMailControl {
 }
 
 impl MailFolderNavigation {
-    fn folder_navigation_state(&self, cx: &mut Context<Self>) -> FolderNavigationState {
+    fn folder_navigation_state(&self, cx: &App) -> FolderNavigationState {
         self.mail_view
             .read_with(cx, |mail_view, _| FolderNavigationState {
                 folders: navigation_order(mail_view.folders.clone()),
@@ -146,13 +149,46 @@ impl MailFolderNavigation {
             })
     }
 
-    fn render_new_mail_button(&self, control: &NewMailControl) -> impl IntoElement {
+    /// The folders as rail items, below an icon-only "New mail" button when the account can
+    /// send. The workspace shows them in place of the pane in a compact window.
+    pub(crate) fn render_rail(&self, cx: &App) -> AnyElement {
+        let state = self.folder_navigation_state(cx);
+        let folders = div()
+            .id("mail-folders")
+            .role(Role::Group)
+            .aria_label("Mail folders")
+            .w_full()
+            .flex_1()
+            .min_h_0()
+            .child(self.render_folder_items(&state, NavItem::rail));
+        #[cfg(test)]
+        let folders = folders.test_support();
+        div()
+            .id("mail-folder-navigation")
+            .w_full()
+            .flex_1()
+            .min_h_0()
+            .flex()
+            .flex_col()
+            .gap_3()
+            .p_2()
+            .when_some(state.new_mail.as_ref(), |navigation, control| {
+                navigation.child(
+                    self.new_mail_button(control)
+                        .accessibility_label(control.label)
+                        .tooltip(control.label),
+                )
+            })
+            .child(folders)
+            .into_any_element()
+    }
+
+    fn new_mail_button(&self, control: &NewMailControl) -> Button {
         let mail_view = self.mail_view.downgrade();
         Button::new("new-mail-message")
             .debug_selector(|| "new-mail-message".to_owned())
             .primary()
             .icon(Icon::new(AppIcon::NewMail))
-            .label(control.label)
             .w_full()
             .disabled(control.disabled)
             .on_click(move |_, window, cx| {
@@ -163,19 +199,33 @@ impl MailFolderNavigation {
     }
 
     fn render_folder_list(&self, state: &FolderNavigationState, colors: ColorTokens) -> AnyElement {
-        let mut folder_list = div()
+        if state.folders.is_empty() {
+            return div()
+                .id("mail-folder-list")
+                .flex_1()
+                .min_h_0()
+                .child(self.render_empty_folder_status(state, colors))
+                .into_any_element();
+        }
+        self.render_folder_items(state, NavItem::new)
+    }
+
+    fn render_folder_items(&self, state: &FolderNavigationState, item: FolderItem) -> AnyElement {
+        div()
             .id("mail-folder-list")
             .flex()
             .flex_col()
             .gap_1()
-            .overflow_y_scrollbar();
-        if state.folders.is_empty() {
-            folder_list = folder_list.child(self.render_empty_folder_status(state, colors));
-        }
-        for folder in &state.folders {
-            folder_list = folder_list.child(self.render_folder_item(folder, state));
-        }
-        folder_list.flex_1().min_h_0().into_any_element()
+            .overflow_y_scrollbar()
+            .children(
+                state
+                    .folders
+                    .iter()
+                    .map(|folder| self.render_folder_item(folder, state, item)),
+            )
+            .flex_1()
+            .min_h_0()
+            .into_any_element()
     }
 
     fn render_empty_folder_status(
@@ -197,14 +247,15 @@ impl MailFolderNavigation {
         &self,
         folder: &MailFolder,
         state: &FolderNavigationState,
-    ) -> impl IntoElement {
+        item: FolderItem,
+    ) -> NavItem {
         let reference = folder.reference().clone();
         let selector = format!("folder:{}", reference.folder_id().as_str());
         let selected = state.selected_folder.as_ref() == Some(&reference);
         let mail_view = self.mail_view.downgrade();
-        NavItem::new(
-            selector,
-            folder.display_name().to_owned(),
+        item(
+            selector.into(),
+            folder.display_name().to_owned().into(),
             folder_icon(folder.kind()),
         )
         .selected(selected)
@@ -261,7 +312,7 @@ impl MailFolderNavigation {
             .px_2()
             .py_2()
             .when_some(state.new_mail.as_ref(), |navigation, control| {
-                navigation.child(self.render_new_mail_button(control))
+                navigation.child(self.new_mail_button(control).label(control.label))
             })
             .child(folders);
         #[cfg(test)]

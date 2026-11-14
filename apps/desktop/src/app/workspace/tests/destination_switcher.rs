@@ -78,8 +78,8 @@ fn the_destination_switcher_names_each_destination_and_shows_no_pill(cx: &mut Te
     );
 }
 
-struct FolderAccountSession {
-    mail: Arc<dyn MailSession>,
+pub(super) struct FolderAccountSession {
+    pub(super) mail: Arc<dyn MailSession>,
 }
 
 impl AccountSession for FolderAccountSession {

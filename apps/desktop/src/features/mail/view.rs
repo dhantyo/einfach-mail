@@ -33,7 +33,7 @@ mod message_write;
 mod read_state;
 mod synchronization;
 
-use crate::components::LocalClock;
+use crate::components::{LocalClock, NAVIGATION_PANE_WIDTH};
 use day_groups::{MessageDay, message_days, row_sizes};
 use follow_up_flag::FollowUpFlagUpdateStatus;
 #[cfg(test)]
@@ -60,6 +60,14 @@ const MAIL_SPLIT_HANDLE_RESERVE: Rems = rems(1.);
 /// split handle's reserve.
 pub(crate) const MAIL_MINIMUM_WIDTH: Rems =
     rems(MESSAGE_LIST_MIN_WIDTH.0 + MAIL_SPLIT_HANDLE_RESERVE.0);
+/// The narrowest window that shows the message list, at its default width, beside the reader.
+/// Below it Mail shows one pane at a time and the workspace shows its navigation rail.
+pub(crate) const MAIL_SPLIT_WINDOW_WIDTH: Rems = rems(
+    NAVIGATION_PANE_WIDTH.0
+        + MESSAGE_LIST_DEFAULT_WIDTH.0
+        + MESSAGE_READER_MIN_WIDTH.0
+        + MAIL_SPLIT_HANDLE_RESERVE.0,
+);
 const MAIL_COMPOSER_SHEET_WIDTH: Rems = rems(30.);
 const ACCOUNT_SYNC_REQUIRED_MESSAGE: &str = "Complete a successful mail sync for this account before archiving, moving, or deleting messages.";
 
@@ -625,6 +633,16 @@ mod folder_navigation;
 mod render;
 
 pub(crate) use folder_navigation::MailFolderNavigation;
+
+#[cfg(test)]
+impl MailView {
+    /// The id of the folder the message list shows, for tests outside the Mail feature.
+    pub(crate) fn test_selected_folder_id(&self) -> Option<&str> {
+        self.selected_folder
+            .as_ref()
+            .map(|folder| folder.folder_id().as_str())
+    }
+}
 
 #[cfg(test)]
 mod tests;

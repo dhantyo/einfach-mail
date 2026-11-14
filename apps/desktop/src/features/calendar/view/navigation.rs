@@ -168,24 +168,39 @@ where
         cx.notify();
     }
 
-    fn render_new_event_button(&self, control: &NewEventControl) -> impl IntoElement {
-        let calendar = self.calendar.downgrade();
-        div()
+    /// An icon-only "New event" button when the account can create events. The workspace shows
+    /// it in its rail in place of the pane in a compact window.
+    pub(crate) fn render_rail(&self, cx: &App) -> AnyElement {
+        let state = self.calendar.read(cx).navigation_state();
+        v_flex()
+            .id("calendar-navigation")
+            .debug_selector(|| "calendar-navigation".to_owned())
             .w_full()
-            .debug_selector(|| "calendar-new-event".to_owned())
-            .child(
-                Button::new("calendar-new-event")
-                    .primary()
-                    .icon(Icon::new(AppIcon::NewEvent))
-                    .label(control.label)
-                    .w_full()
-                    .disabled(control.disabled)
-                    .on_click(move |_, window, cx| {
-                        if let Some(calendar) = calendar.upgrade() {
-                            calendar.update(cx, |view, cx| view.open_event_composer(window, cx));
-                        }
-                    }),
-            )
+            .flex_1()
+            .min_h_0()
+            .p_2()
+            .when_some(state.new_event.as_ref(), |navigation, control| {
+                navigation.child(render_new_event_button(
+                    self.new_event_button(control)
+                        .accessibility_label(control.label)
+                        .tooltip(control.label),
+                ))
+            })
+            .into_any_element()
+    }
+
+    fn new_event_button(&self, control: &NewEventControl) -> Button {
+        let calendar = self.calendar.downgrade();
+        Button::new("calendar-new-event")
+            .primary()
+            .icon(Icon::new(AppIcon::NewEvent))
+            .w_full()
+            .disabled(control.disabled)
+            .on_click(move |_, window, cx| {
+                if let Some(calendar) = calendar.upgrade() {
+                    calendar.update(cx, |view, cx| view.open_event_composer(window, cx));
+                }
+            })
     }
 
     fn render_month_header(&self, grid: &MonthGrid, cx: &mut Context<Self>) -> impl IntoElement {
@@ -431,11 +446,20 @@ where
             .px_2()
             .py_2()
             .when_some(state.new_event.as_ref(), |navigation, control| {
-                navigation.child(self.render_new_event_button(control))
+                navigation.child(render_new_event_button(
+                    self.new_event_button(control).label(control.label),
+                ))
             })
             .child(mini_month);
         #[cfg(test)]
         let navigation = navigation.test_support();
         navigation
     }
+}
+
+fn render_new_event_button(button: Button) -> impl IntoElement {
+    div()
+        .w_full()
+        .debug_selector(|| "calendar-new-event".to_owned())
+        .child(button)
 }

@@ -70,7 +70,7 @@ Copy [the ADR template](TEMPLATE.md) for each decision. Name new files `NNNN-sho
 | [0063](0063-reap-ews-transport-workers.md) | Reap EWS transport workers without blocking Drop | Accepted; implementation tracked in issue #383 |
 | [0064](0064-calendar-capabilities-by-operation.md) | Model calendar capabilities by operation | Accepted; migration tracked in issue #390 |
 | [0065](0065-safe-ews-calendar-event-writes.md) | Define safe EWS calendar event writes | Accepted; implementation decomposition tracked in issue #389 |
-| [0066](0066-fluent-visual-language-and-navigation.md) | Use a Fluent visual language and a destination switcher | Accepted; amends ADR 0059; implementation tracked in issues #452–#457; theme installation amendment proposed by ADR 0069 |
+| [0066](0066-fluent-visual-language-and-navigation.md) | Use a Fluent visual language and a destination switcher | Accepted; amends ADR 0059; implementation tracked in issues #452–#457; theme installation amendment proposed by ADR 0069; compact navigation rail added by its 2026-11-14 amendment |
 | [0067](0067-message-previews-folder-unread-counts-and-kinds.md) | Show message previews, folder unread counts, and folder kinds | Accepted; amends ADR 0011; implementation tracked in issues #458–#460 |
 | [0068](0068-windows-ui-preview-build.md) | Build the synthetic UI preview for Windows | Proposed; amends ADR 0010 |
 | [0069](0069-native-window-chrome-and-system-look.md) | Draw native window chrome and follow system appearance preferences | Proposed; amends ADRs 0059 and 0066 |

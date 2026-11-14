@@ -23,7 +23,7 @@ Einfach Mail should look and feel like a Windows 11 app on Linux, using Wino Mai
 The owner can change these. Record any change here and in ADR 0066.
 
 - The base font stays 16px and uses the platform UI font.
-- The navigation pane is a fixed 16rem with no icon rail.
+- The navigation pane is a fixed 16rem in a wide window. Below Mail's split width it collapses to an icon rail (ADR 0066 amendment of 2026-11-14).
 - Message times use a 24-hour clock and English date labels until localization.
 - Delete is a neutral ghost button because it moves the message to Deleted Items.
 - Icons come from a curated Lucide subset, not the full `AllAssets` bundle.
@@ -91,13 +91,28 @@ Closeout of [#451](https://github.com/1fach/einfach-mail/issues/451) on 2026-11-
 - No live screen-reader review. Tracked by [#9](https://github.com/1fach/einfach-mail/issues/9) and [#22](https://github.com/1fach/einfach-mail/issues/22).
 - The week grid has no time axis. Events are stacked by start time in each day column, as in the agenda, so their height says nothing about their length.
 - The preview captures show a pink or red compositor border at the window corners. It comes from the Hyprland window border, not the app.
+- The rail shows the selected folder and destination with the fill alone, so, as in the pane, assistive technology does not hear which one is selected.
+- The opened pane at a compact width leaves the content the same width as before #477, for example 384px at 640px. It stays open until its toggle closes it.
 - The disconnected-account and Exchange form captures were not recaptured at closeout, because the preview script could not reach those states. The `disconnected` and `exchange-form` scenarios now reach them (see the 2026-11-14 polish entry in the progress log).
 
 ### Visual follow-ups noticed in the captures
 
 - The Mail empty reader text ("Select a message to read it") sat at the top of the pane. Fixed by [#477](https://github.com/1fach/einfach-mail/issues/477).
 - The compact agenda repeated the time zone abbreviation ("09:00 CET to 09:30 CET") on every event. Fixed by [#477](https://github.com/1fach/einfach-mail/issues/477).
-- At 760px the 16rem navigation pane keeps a third of the window, which leaves the list or reader about 500px. Wino collapses to an icon rail. This is the accepted fixed-pane default.
+- At 760px the 16rem navigation pane kept a third of the window, which left the list or reader about 500px. Fixed by [#477](https://github.com/1fach/einfach-mail/issues/477): below 1104px the pane collapses to a 3.5rem icon rail, and a toggle opens the full pane. See [Decisions while the owner was away](#decisions-while-the-owner-was-away).
+
+## Decisions while the owner was away
+
+These were taken without the owner for the compact navigation rail of [#477](https://github.com/1fach/einfach-mail/issues/477). The owner can reverse any of them. [ADR 0066](../decisions/0066-fluent-visual-language-and-navigation.md) records the rail itself in its 2026-11-14 amendment.
+
+1. The rail appears below Mail's split width at the default message list width, 69rem (1104px). This reuses Mail's compact breakpoint instead of adding a second one, so windows between 1000px and 1103px also get the rail. WinUI's NavigationView uses 1008px for the same switch.
+2. The toggle opens the full pane beside the content and pushes it aside. It does not cover the content the way WinUI's compact pane and a GPUI Kit `Sheet` do. The pane stays open until its toggle closes it, also across destinations and window resizes. Choosing a folder does not close it.
+3. Mail and Calendar keep choosing their layouts as if the full pane were shown. Opening the pane therefore never re-lays out the content. The cost is that Mail stays in its single-pane layout between 904px and 1103px, where the list and reader would fit beside the rail, and the reader folds its commands into "More actions" a little earlier than it must.
+4. Rail items, folders included, show selection with the fill alone and no pill, like the bottom switcher. Two pills, one for the folder and one for Mail, would compete in one column.
+5. A folder with unread mail shows a GPUI Kit `Badge` dot in the accent colour instead of a number, because a number does not fit a 40px item. The accessible name and the tooltip carry the exact count, for example "Inbox, 12 unread".
+6. The rail keeps "New mail" and "New event" as icon-only primary buttons, because they are each view's main command. The account identity, the folder names, the folder loading text, and the mini month appear only in the opened pane.
+7. The toggle reads "Open navigation pane" or "Close navigation pane", uses the Lucide panel-left icons, and is the first tab stop of the rail and of the opened pane.
+8. The Settings test that checks the appearance radios wrap now measures at the 560px window minimum, because beside the rail a 640px window leaves the card room for the radios on one row.
 
 ## Progress log
 
@@ -113,3 +128,4 @@ Each unit appends one line when it merges: date, unit, PR, and verification evid
 - 2026-11-13: U8 Calendar alignment, [PR #475](https://github.com/1fach/einfach-mail/pull/475) for [#457](https://github.com/1fach/einfach-mail/issues/457). New event and a keyboard-operable mini month move into the navigation pane (`CalendarNavigation`, like Mail's folders), and the header is a `PaneHeader` with Today, previous and next week, and Sync as icon controls. `week_agenda` builds the flat event order once with a `WeekGrid` of seven `DayColumn`s, and the week renders as seven columns with event bars above 44rem of content width and as the `GroupHeader` agenda below it. Both layouts fill the same single listbox, so the ADR 0042 keys, Tab stop and set positions are unchanged. Notices are `InfoBar`s. Desktop tests went from 176 to 195 before merging #472 (205 after, 214 with `ui-preview`), and `scripts/check-linux-local.sh` passes. `docs/project/evidence/fluent-calendar-*.png` shows the grid in light and dark at 1280x800, New event with a temporary local full-access profile, and the agenda at 760x700.
 - 2026-11-14: U9 closeout for [#451](https://github.com/1fach/einfach-mail/issues/451). `EINFACH_MAIL_UI_PREVIEW_SCENARIO=full-access` gives the synthetic account every mail action and calendar write, so New mail, the reader command bar and New event are reproducible, and `scripts/preview-shots.sh -e` passes a scenario and parks the pointer outside the window. Tests now pin the `Status` caption and `Alert` write notice in Calendar and the full weekday names of the mini month initials, which became column headers in the mini month grid. All `fluent-{list,reader,nav,pages,calendar}-*.png` evidence was recaptured from the script on `main`, and the captures from the old local profile were replaced by full-access captures. The [Review](#review) section records the checklists and the known gaps. Desktop tests went from 205 to 207 (214 to 218 with `ui-preview`), and `scripts/check-linux-local.sh` passes including `cargo audit`.
 - 2026-11-14: Polish for [#477](https://github.com/1fach/einfach-mail/issues/477) items 1, 2 and 4 (not the compact navigation rail). The reader wrapper is now a full-size flex column, so the empty state is centred in the split and compact reader. Agenda rows and event bars show the time without a zone, the agenda caption row names the zone once ("Times in Europe/Berlin"), and the accessible event name keeps the zone. The `disconnected` and `exchange-form` preview scenarios reach the provider cards and the Exchange Server form, and `docs/project/evidence/fluent-pages-accounts-disconnected-*`, `fluent-pages-narrow-accounts-disconnected-*` and `fluent-pages-accounts-ews-form-*` were recaptured with `scripts/preview-shots.sh -e`. New captures are `fluent-polish-reader-empty-*.png` and `fluent-polish-agenda-*.png`. Desktop tests went from 207 to 210 (218 to 224 with `ui-preview`), and `scripts/check-linux-local.sh` passes.
+- 2026-11-14: Compact navigation rail for [#477](https://github.com/1fach/einfach-mail/issues/477), the last item of that issue. Below 1104px the pane collapses to a 3.5rem rail with a toggle, New mail or New event, Mail's folders with an unread dot, and the destinations in a column. The toggle opens the full pane beside the content. ADR 0066 has a 2026-11-14 amendment. Desktop tests went from 230 to 238 (244 to 252 with `ui-preview`). Captures from the synthetic preview on Xvfb with the `full-access` scenario: `docs/project/evidence/fluent-rail-mail-640-{light,dark}.png`, `fluent-rail-calendar-640-{light,dark}.png`, `fluent-rail-mail-640-open-light.png`, and `fluent-rail-mail-1280-light.png`.

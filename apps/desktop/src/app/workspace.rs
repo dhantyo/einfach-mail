@@ -23,7 +23,7 @@ use crate::features::{
 };
 
 pub(crate) use state::NavigationSurfaceAppearance;
-use state::WorkspaceContent;
+use state::{CompactNavigation, WorkspaceContent};
 #[cfg(test)]
 pub(crate) use test_access::{WorkspaceTestContent, WorkspaceTestSection};
 
@@ -45,6 +45,8 @@ pub(crate) struct Workspace<P: AccountProvider + 'static> {
     calendar_navigation_focus: FocusHandle,
     accounts_navigation_focus: FocusHandle,
     settings_navigation_focus: FocusHandle,
+    compact_navigation: CompactNavigation,
+    compact_navigation_toggle_focus: FocusHandle,
     task: Option<Task<()>>,
     #[cfg(feature = "ui-preview")]
     preview_start: Option<preview_start::PreviewStartStep>,
@@ -93,6 +95,8 @@ impl<P: AccountProvider + 'static> Workspace<P> {
             calendar_navigation_focus: cx.focus_handle().tab_stop(true),
             accounts_navigation_focus: cx.focus_handle().tab_stop(true),
             settings_navigation_focus: cx.focus_handle().tab_stop(true),
+            compact_navigation: CompactNavigation::Rail,
+            compact_navigation_toggle_focus: cx.focus_handle().tab_stop(true),
             task: None,
             #[cfg(feature = "ui-preview")]
             preview_start: None,

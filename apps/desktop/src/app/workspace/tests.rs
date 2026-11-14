@@ -26,6 +26,7 @@ mod appearance;
 mod calendar_navigation;
 mod destination_switcher;
 mod navigation;
+mod navigation_rail;
 #[cfg(feature = "ui-preview")]
 mod preview_start;
 mod session_lifecycle;

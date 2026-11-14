@@ -24,7 +24,7 @@ pub(super) use nav_item::NavItem;
 pub(super) use page::Page;
 pub(super) use pane_header::PaneHeader;
 pub(super) use settings_card::SettingsCard;
-pub(super) use shell::NAVIGATION_PANE_WIDTH;
+pub(super) use shell::{NAVIGATION_PANE_WIDTH, NAVIGATION_RAIL_WIDTH};
 pub(super) use sync_age::relative_age_label;
 pub(super) use theme::install as install_theme;
 pub(super) use theme::{StatusTone, status_colors};
