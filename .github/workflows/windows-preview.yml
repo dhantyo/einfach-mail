@@ -11,6 +11,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: windows-preview-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build ui-preview (Windows)
@@ -31,6 +35,8 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@1.95.0
 
+      - uses: Swatinem/rust-cache@v2
+
       - name: Check the build tools
         run: |
           if (-not (Test-Path $env:OPENSSL_SRC_PERL)) {
@@ -47,4 +53,37 @@ jobs:
           name: einfach-mail-ui-preview-windows-x64
           path: target/release/einfach-mail.exe
           if-no-files-found: error
+          retention-days: 14
+
+      # A hosted runner has no GPU and is not Windows 11, so this only shows
+      # that the preview starts and stays up. It is not a visual review.
+      - name: Launch the preview and capture the result
+        env:
+          RUST_BACKTRACE: "1"
+        run: |
+          $out = "preview-run"
+          New-Item -ItemType Directory -Force $out | Out-Null
+          $process = Start-Process -FilePath "target\release\einfach-mail.exe" -PassThru `
+            -RedirectStandardOutput "$out\stdout.log" -RedirectStandardError "$out\stderr.log"
+          $null = $process.Handle
+          Start-Sleep -Seconds 25
+          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+          $bounds = [System.Windows.Forms.SystemInformation]::VirtualScreen
+          $bitmap = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.Height
+          $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+          $graphics.CopyFromScreen($bounds.Left, $bounds.Top, 0, 0, $bitmap.Size)
+          $bitmap.Save("$PWD\$out\screen.png")
+          Get-Content "$out\stderr.log" -Tail 80
+          Get-Content "$out\stdout.log" -Tail 20
+          if ($process.HasExited) {
+            throw "The preview exited within 25 seconds with code $($process.ExitCode)"
+          }
+          Stop-Process -Id $process.Id -Force
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: einfach-mail-ui-preview-launch-evidence
+          path: preview-run
+          if-no-files-found: warn
           retention-days: 14
