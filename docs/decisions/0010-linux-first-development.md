@@ -1,6 +1,6 @@
 # ADR 0010: Focus current development on Linux
 
-- Status: Accepted
+- Status: Accepted; a Windows build of the synthetic UI preview is proposed by [ADR 0068](0068-windows-ui-preview-build.md)
 - Date: 2026-10-31
 - Owners: Project maintainer
 

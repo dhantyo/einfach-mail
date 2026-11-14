@@ -1,0 +1,47 @@
+name: Windows UI preview
+
+# Builds the synthetic ui-preview for review on Windows 11. See ADR 0068.
+# This is not a required check and does not verify the real Windows app.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/windows-preview.yml
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ui-preview (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      CARGO_PROFILE_RELEASE_DEBUG_ASSERTIONS: "true"
+      OPENSSL_SRC_PERL: C:\Strawberry\perl\bin\perl.exe
+      AWS_LC_SYS_PREBUILT_NASM: "1"
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@1.95.0
+
+      - name: Check the build tools
+        run: |
+          if (-not (Test-Path $env:OPENSSL_SRC_PERL)) {
+            throw "Strawberry Perl is missing at $env:OPENSSL_SRC_PERL"
+          }
+          & $env:OPENSSL_SRC_PERL -v | Select-Object -First 2
+          rustc --version
+
+      - name: Build the synthetic UI preview
+        run: cargo build --locked --release --package einfach-mail-desktop --features ui-preview --bin einfach-mail
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: einfach-mail-ui-preview-windows-x64
+          path: target/release/einfach-mail.exe
+          if-no-files-found: error
+          retention-days: 14

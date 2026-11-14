@@ -20,7 +20,7 @@ GPUI Kit's published docs state Rust 1.92 or newer, but the locked GPUI dependen
 
 ## Install native build tools
 
-Linux is the only current development target. Add Windows and macOS setup instructions when those support milestones begin.
+Linux is the only current development target. The Windows UI preview below is built in GitHub Actions and needs no local tools. Add Windows and macOS setup instructions when those support milestones begin.
 
 GPUI Kit documents these requirements for Linux desktop development:
 
@@ -114,6 +114,12 @@ scripts/preview-shots.sh -e exchange-form -p my-change-ews-form accounts
 `-e` passes the scenario to the preview. The script also moves the pointer to the bottom-right corner of the first monitor, so no hover state reaches a capture.
 
 The script sets `OPENSSL_NO_VENDOR=1` unless you set it, because the vendored OpenSSL build needs Perl `FindBin`. Use synthetic preview data only, and do not commit captures that contain anything else. Run the preview-only headless tests with `cargo test --locked --package einfach-mail-desktop --features ui-preview`.
+
+## Get the Windows UI preview
+
+[ADR 0068](../decisions/0068-windows-ui-preview-build.md) allows a Windows build of the same synthetic preview for GUI review on Windows 11. The `Windows UI preview` workflow in `.github/workflows/windows-preview.yml` builds it on a `windows-latest` runner. Start it from the repository's Actions tab with **Run workflow**, or push a change to the workflow file on any branch. A fork must enable Actions first. When the run finishes, download the `einfach-mail-ui-preview-windows-x64` artifact from the run page within 14 days, extract it, and run `einfach-mail.exe`. A console window opens beside the app. Set the scenario and view variables above in PowerShell before starting it, for example `$env:EINFACH_MAIL_UI_PREVIEW_SCENARIO = 'full-access'`.
+
+The binary links the Microsoft Visual C++ runtime dynamically. If Windows reports that `VCRUNTIME140.dll` is missing, install the Microsoft Visual C++ Redistributable for x64. The build uses the release profile with `CARGO_PROFILE_RELEASE_DEBUG_ASSERTIONS=true`, because `ui-preview` is rejected without debug assertions. This preview checks the Windows UI only. Sign-in, credential storage, and the encrypted cache remain Linux-only until M5.
 
 To enable the account view's sign-in action in the regular app, set `EINFACH_MAIL_ENTRA_CLIENT_ID` to the client ID of a public Microsoft Entra app registration. Set `EINFACH_MAIL_ENTRA_CALLBACK_PORT` to the nonzero port registered for `http://127.0.0.1:<port>/callback`. The app does not use a client secret. Initial sign-in requests delegated `User.Read`, `Mail.Read`, `Calendars.Read`, and `offline_access`. It reads the signed-in profile through Graph `/me` and stores the refresh token in Linux Secret Service. The app requests `Mail.ReadWrite`, `Calendars.ReadWrite`, or `Mail.Send` only in a separate same-account permission review after Microsoft denies the related action. Each permission gives broader access than the app's current actions. The app explains the full Microsoft capability before opening the system browser. See the [Graph permission table](../research/microsoft-graph.md#permissions) and [ADR 0045](../decisions/0045-incremental-graph-permissions.md).
 
