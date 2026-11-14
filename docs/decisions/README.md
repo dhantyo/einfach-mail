@@ -63,13 +63,14 @@ Copy [the ADR template](TEMPLATE.md) for each decision. Name new files `NNNN-sho
 | [0056](0056-pin-patched-sqlcipher-integration.md) | Pin the patched SQLCipher integration while upstream releases catch up | Accepted |
 | [0057](0057-read-only-ews-calendar-snapshots.md) | Read-only EWS calendar snapshots | Accepted |
 | [0058](0058-per-operation-ews-mail-capabilities.md) | Gate EWS mail actions by operation | Accepted; implementation tracked in issue #267 |
-| [0059](0059-native-mail-and-calendar-workspace.md) | Use a shared, adaptive mail and calendar workspace | Accepted; implementation tracked in M10 issues #268–#274; navigation selection and destination placement amended by ADR 0066 |
+| [0059](0059-native-mail-and-calendar-workspace.md) | Use a shared, adaptive mail and calendar workspace | Accepted; implementation tracked in M10 issues #268–#274; navigation selection and destination placement amended by ADR 0066; window chrome and material amendment proposed by ADR 0069 |
 | [0060](0060-one-active-account-first-release.md) | Support one active account in the first release | Accepted; Accounts UI tracked in #272 |
 | [0061](0061-feature-first-module-layout-and-test-placement.md) | Use a feature-first module layout and colocated tests | Accepted; refactor tracked in issue #282 |
 | [0062](0062-target-borrowed-mail-provider-future.md) | Tie the message-body future to its borrowed inputs | Accepted |
 | [0063](0063-reap-ews-transport-workers.md) | Reap EWS transport workers without blocking Drop | Accepted; implementation tracked in issue #383 |
 | [0064](0064-calendar-capabilities-by-operation.md) | Model calendar capabilities by operation | Accepted; migration tracked in issue #390 |
 | [0065](0065-safe-ews-calendar-event-writes.md) | Define safe EWS calendar event writes | Accepted; implementation decomposition tracked in issue #389 |
-| [0066](0066-fluent-visual-language-and-navigation.md) | Use a Fluent visual language and a destination switcher | Accepted; amends ADR 0059; implementation tracked in issues #452–#457 |
+| [0066](0066-fluent-visual-language-and-navigation.md) | Use a Fluent visual language and a destination switcher | Accepted; amends ADR 0059; implementation tracked in issues #452–#457; theme installation amendment proposed by ADR 0069 |
 | [0067](0067-message-previews-folder-unread-counts-and-kinds.md) | Show message previews, folder unread counts, and folder kinds | Accepted; amends ADR 0011; implementation tracked in issues #458–#460 |
 | [0068](0068-windows-ui-preview-build.md) | Build the synthetic UI preview for Windows | Proposed; amends ADR 0010 |
+| [0069](0069-native-window-chrome-and-system-look.md) | Draw native window chrome and follow system appearance preferences | Proposed; amends ADRs 0059 and 0066 |

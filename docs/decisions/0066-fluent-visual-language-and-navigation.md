@@ -1,6 +1,6 @@
 # ADR 0066: Use a Fluent visual language and a destination switcher
 
-- Status: Accepted; implementation tracked in issues #452–#457
+- Status: Accepted; implementation tracked in issues #452–#457; the single theme installation at startup is proposed for amendment by [ADR 0069](0069-native-window-chrome-and-system-look.md)
 - Date: 2026-11-13
 - Owners: Einfach Mail maintainers
 

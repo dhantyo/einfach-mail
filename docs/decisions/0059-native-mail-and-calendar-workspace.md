@@ -1,6 +1,6 @@
 # ADR 0059: Use a shared, adaptive mail and calendar workspace
 
-- Status: Accepted; the navigation selection and destination placement are amended by [ADR 0066](0066-fluent-visual-language-and-navigation.md)
+- Status: Accepted; the navigation selection and destination placement are amended by [ADR 0066](0066-fluent-visual-language-and-navigation.md); the Linux title bar and window material bullets are proposed for amendment by [ADR 0069](0069-native-window-chrome-and-system-look.md)
 - Date: 2026-11-10
 - Owners: Einfach Mail maintainers
 
