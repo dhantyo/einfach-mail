@@ -24,7 +24,6 @@ jobs:
       run:
         shell: pwsh
     env:
-      CARGO_PROFILE_RELEASE_DEBUG_ASSERTIONS: "true"
       OPENSSL_SRC_PERL: C:\Strawberry\perl\bin\perl.exe
       AWS_LC_SYS_PREBUILT_NASM: "1"
       # Link the C runtime statically so the binary starts on a Windows 11
@@ -46,7 +45,12 @@ jobs:
           rustc --version
 
       - name: Build the synthetic UI preview
-        run: cargo build --locked --release --package einfach-mail-desktop --features ui-preview --bin einfach-mail
+        # ui-preview is rejected without debug assertions. Enable them for the
+        # desktop crate only, so dependencies run as they do in a release build.
+        run: >
+          cargo build --locked --release
+          --config "profile.release.package.einfach-mail-desktop.debug-assertions=true"
+          --package einfach-mail-desktop --features ui-preview --bin einfach-mail
 
       - uses: actions/upload-artifact@v7
         with:

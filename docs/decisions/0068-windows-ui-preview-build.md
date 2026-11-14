@@ -33,7 +33,9 @@ Allow a Windows build of the `ui-preview` developer preview now, so that GUI wor
 - Vendored OpenSSL for SQLCipher uses the runner's Strawberry Perl, set through `OPENSSL_SRC_PERL`.
 - `aws-lc-sys` uses the MSVC compiler. It falls back to the prebuilt NASM objects shipped in the crate when the runner has no NASM.
 
-The build uses the release profile with `CARGO_PROFILE_RELEASE_DEBUG_ASSERTIONS=true`. `apps/desktop/src/main.rs` rejects `ui-preview` builds without debug assertions, and this keeps that guard in place while producing an optimized binary.
+The build uses the release profile and enables debug assertions for the desktop crate only, through a `--config` profile override. `apps/desktop/src/main.rs` rejects `ui-preview` builds without debug assertions, and this keeps that guard in place while dependencies run as they do in a release build.
+
+The workflow links the C runtime statically with `+crt-static`. It then starts the built binary on the runner, uploads its output and a screen capture, and fails when the preview exits within 25 seconds.
 
 The workflow is not a required check and makes no claim about Windows support. It does not change any manifest, the lockfile, or Rust source.
 
@@ -49,7 +51,8 @@ The workflow is not a required check and makes no claim about Windows support. I
 ## Consequences
 
 - AGENTS.md, the roadmap, setup, and status record the preview exception. ADR 0010 stays in force for the real application.
-- The preview binary links the MSVC runtime dynamically. A Windows 11 machine without the Microsoft Visual C++ redistributable may fail to start it. Zed builds Windows with `+crt-static`, but `openssl-src` 300.6.1 passes no runtime option to the vendored OpenSSL build, so a static runtime could mix C runtimes. This change does not try it.
+- The first preview binary linked the MSVC runtime dynamically and imported `VCRUNTIME140.dll`. The workflow now builds with `+crt-static`, as Zed does on Windows, and the resulting binary imports no Visual C++ runtime library. The statically linked build, with debug assertions still enabled for every crate, started and rendered the Accounts view on a `windows-latest` runner on 2026-11-14.
+- A reviewer's Windows 11 machine started the first, dynamically linked binary and it exited at once. The cause is not known. The runner launch does not reproduce it, so a launch on real Windows 11 hardware remains unverified.
 - The binary is a console-subsystem executable, so a console window opens beside the app.
 - `deny.toml` still checks only Linux targets. Adding the Windows target needs a `cargo deny check bans` run, which was not available when this decision was written.
 - Verify the decision by running the workflow, downloading the artifact, and launching it on Windows 11 with each preview scenario in [development setup](../project/setup.md). Record the result in [project status](../project/status.md). Until then, claim only that the preview type-checks for Windows.
