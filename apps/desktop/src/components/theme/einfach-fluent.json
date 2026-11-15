@@ -46,7 +46,7 @@
         "list.even.background": "#F9F9F9",
         "list.head.background": "#F3F3F3",
         "list.hover.background": "#F0F0F0",
-        "list.active.background": "#005FB81F"
+        "list.active.background": "#0000001A"
       }
     },
     {
@@ -94,7 +94,7 @@
         "list.even.background": "#282828",
         "list.head.background": "#202020",
         "list.hover.background": "#2F2F2F",
-        "list.active.background": "#60CDFF24"
+        "list.active.background": "#FFFFFF17"
       }
     }
   ]

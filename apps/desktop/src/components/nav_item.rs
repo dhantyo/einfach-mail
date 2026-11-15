@@ -11,10 +11,9 @@ use gpui_kit::{
 };
 
 use super::icon::AppIcon;
+use super::selection_pill::selection_pill;
 
 const ITEM_HEIGHT: Rems = rems(2.25);
-const PILL_WIDTH: Rems = rems(0.1875);
-const PILL_HEIGHT: Rems = rems(1.);
 /// The largest count shown in full. A larger count shows as "999+".
 const MAX_SHOWN_UNREAD: u32 = 999;
 
@@ -229,22 +228,7 @@ impl NavItem {
     }
 
     fn render_pill(&self, cx: &App) -> impl IntoElement {
-        let selector = format!("{}-pill", self.id);
-        div()
-            .absolute()
-            .top_0()
-            .bottom_0()
-            .left_1()
-            .flex()
-            .items_center()
-            .child(
-                div()
-                    .debug_selector(move || selector)
-                    .w(PILL_WIDTH)
-                    .h(PILL_HEIGHT)
-                    .rounded_full()
-                    .bg(cx.theme().primary),
-            )
+        selection_pill(&self.id, rems(0.25), cx)
     }
 }
 

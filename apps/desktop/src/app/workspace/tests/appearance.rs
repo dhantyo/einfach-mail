@@ -532,6 +532,7 @@ fn assert_fluent_contrast(theme: &Theme, mode: ThemeMode) {
             vec![
                 navigation,
                 ("selected navigation item", theme.secondary_active),
+                selected,
             ],
         ),
     ] {

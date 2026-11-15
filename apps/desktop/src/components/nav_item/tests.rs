@@ -6,8 +6,9 @@ use gpui_kit::{
     VisualTestContext, Window, div, prelude::*, px,
 };
 
-use super::{AppIcon, NavItem, PILL_HEIGHT, PILL_WIDTH, unread_count_text};
+use super::{AppIcon, NavItem, unread_count_text};
 use crate::components::NAVIGATION_PANE_WIDTH;
+use crate::components::selection_pill::{PILL_HEIGHT, PILL_WIDTH};
 
 const UNAVAILABLE_REASON: &str = "Wait for the current update to finish.";
 
