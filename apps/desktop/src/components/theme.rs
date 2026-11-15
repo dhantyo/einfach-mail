@@ -12,6 +12,11 @@ use serde_json::{Map, Value};
 
 const FLUENT_THEME_SET: &str = include_str!("theme/einfach-fluent.json");
 const STATUS_TINT_OPACITY: f32 = 0.12;
+/// How strongly the accent tints a calendar event at rest, under the pointer, and when selected.
+/// An event has no outline: the tint and the accent strip at its leading edge carry the color.
+pub(crate) const EVENT_TINT_OPACITY: f32 = 0.12;
+pub(crate) const EVENT_HOVER_TINT_OPACITY: f32 = 0.15;
+pub(crate) const EVENT_SELECTED_TINT_OPACITY: f32 = 0.18;
 /// The virtual family that GPUI maps to each platform's UI font.
 const SYSTEM_UI_FONT: &str = ".SystemUIFont";
 /// The Windows 11 UI family. GPUI maps `.SystemUIFont` to Segoe UI on Windows.

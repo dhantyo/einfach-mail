@@ -13,8 +13,8 @@ use gpui_kit::{
 };
 
 use crate::components::{
-    AppIcon, GroupHeader, InfoBar, OptionFill, PaneHeader, SetPosition, StatusTone,
-    filled_list_option, list_option,
+    AppIcon, EVENT_HOVER_TINT_OPACITY, EVENT_SELECTED_TINT_OPACITY, EVENT_TINT_OPACITY,
+    GroupHeader, InfoBar, OptionFill, PaneHeader, SetPosition, StatusTone, filled_list_option,
 };
 
 use super::CalendarView;
@@ -471,29 +471,27 @@ where
         }
     };
     let id = format!("calendar-event-option-{date_id}-{event_id}");
-    let option = match presentation {
-        EventPresentation::Row => list_option(id, position, selected, cx).px_4().py_2(),
-        EventPresentation::Bar => filled_list_option(
-            id,
-            position,
-            selected,
-            OptionFill {
-                rest: primary.opacity(BAR_TINT_OPACITY),
-                hover: primary.opacity(BAR_HOVER_TINT_OPACITY),
-            },
-            cx,
-        )
-        .p_2()
+    let fill = OptionFill {
+        rest: primary.opacity(EVENT_TINT_OPACITY),
+        hover: primary.opacity(EVENT_HOVER_TINT_OPACITY),
+        selected: primary.opacity(EVENT_SELECTED_TINT_OPACITY),
+    };
+    let option = filled_list_option(id, position, selected, fill, cx)
+        .relative()
         .border_1()
         .border_color(if selected {
             primary
         } else {
-            primary.opacity(BAR_OUTLINE_OPACITY)
-        }),
-    }
-    .debug_selector(move || format!("calendar-event-row-{date_id}-{event_id}"))
-    .aria_label(accessible_label)
-    .child(content);
+            gpui_kit::transparent_black()
+        })
+        .map(|option| match presentation {
+            EventPresentation::Row => option.px_4().py_2(),
+            EventPresentation::Bar => option.py_2().pr_2().pl_3(),
+        })
+        .child(render_event_strip(primary))
+        .debug_selector(move || format!("calendar-event-row-{date_id}-{event_id}"))
+        .aria_label(accessible_label)
+        .child(content);
     #[cfg(test)]
     let option = option.test_support();
     option
@@ -503,10 +501,17 @@ where
         .into_any_element()
 }
 
-/// The accent tint of an unselected event bar, and its outline and hover strengths.
-const BAR_TINT_OPACITY: f32 = 0.08;
-const BAR_HOVER_TINT_OPACITY: f32 = 0.16;
-const BAR_OUTLINE_OPACITY: f32 = 0.3;
+/// The solid accent strip at the leading edge of an event, an overlay without listeners.
+fn render_event_strip(accent: gpui_kit::Hsla) -> Div {
+    div()
+        .absolute()
+        .left_1()
+        .top_1()
+        .bottom_1()
+        .w(rems(0.1875))
+        .rounded_full()
+        .bg(accent)
+}
 
 fn event_identity(key: &AgendaEventKey) -> String {
     format!(

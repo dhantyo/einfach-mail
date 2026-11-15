@@ -6,7 +6,10 @@ use gpui_kit::{
 };
 use tempfile::tempdir;
 
-use crate::components::{StatusTone, install_theme, status_colors};
+use crate::components::{
+    EVENT_HOVER_TINT_OPACITY, EVENT_SELECTED_TINT_OPACITY, EVENT_TINT_OPACITY, StatusTone,
+    install_theme, status_colors,
+};
 use crate::features::{AppearancePreference, AppearanceSettingsNotice, AppearanceSettingsStore};
 
 use super::*;
@@ -448,6 +451,12 @@ fn assert_fluent_contrast(theme: &Theme, mode: ThemeMode) {
     let popover = ("popover", theme.popover);
     let hover = ("row hover", theme.list_hover);
     let selected = ("selected row", selected_row);
+    let event_surface = |opacity: f32| theme.background.blend(theme.primary.opacity(opacity));
+    let events = vec![
+        ("event at rest", event_surface(EVENT_TINT_OPACITY)),
+        ("event hover", event_surface(EVENT_HOVER_TINT_OPACITY)),
+        ("selected event", event_surface(EVENT_SELECTED_TINT_OPACITY)),
+    ];
 
     for (role, foreground, minimum, surfaces) in [
         (
@@ -463,7 +472,10 @@ fn assert_fluent_contrast(theme: &Theme, mode: ThemeMode) {
                 selected,
                 ("selected navigation item", theme.secondary_active),
                 ("subtle hover", theme.accent),
-            ],
+            ]
+            .into_iter()
+            .chain(events.clone())
+            .collect(),
         ),
         (
             "secondary text",
@@ -477,13 +489,19 @@ fn assert_fluent_contrast(theme: &Theme, mode: ThemeMode) {
                 hover,
                 selected,
                 ("group header", theme.list_head),
-            ],
+            ]
+            .into_iter()
+            .chain(events.clone())
+            .collect(),
         ),
         (
             "accent text",
             theme.primary,
             4.5,
-            vec![page, navigation, card, selected],
+            [page, navigation, card, selected]
+                .into_iter()
+                .chain(events.clone())
+                .collect(),
         ),
         (
             "text on accent",

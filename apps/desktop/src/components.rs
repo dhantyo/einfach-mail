@@ -27,4 +27,7 @@ pub(super) use settings_card::SettingsCard;
 pub(super) use shell::{NAVIGATION_PANE_WIDTH, NAVIGATION_RAIL_WIDTH};
 pub(super) use sync_age::relative_age_label;
 pub(super) use theme::install as install_theme;
-pub(super) use theme::{StatusTone, status_colors};
+pub(super) use theme::{
+    EVENT_HOVER_TINT_OPACITY, EVENT_SELECTED_TINT_OPACITY, EVENT_TINT_OPACITY, StatusTone,
+    status_colors,
+};

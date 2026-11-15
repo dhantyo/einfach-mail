@@ -17,13 +17,15 @@ impl SetPosition {
     }
 }
 
-/// The fills of an option that is not selected, when it does not use the list's own.
+/// The fills of an option, when it does not use the list's own.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct OptionFill {
     /// The fill at rest.
     pub(crate) rest: Hsla,
     /// The fill under the pointer.
     pub(crate) hover: Hsla,
+    /// The fill of the selected option, at rest and under the pointer.
+    pub(crate) selected: Hsla,
 }
 
 /// An option of a listbox: a full-width, rounded row with a role, a set position, and a state.
@@ -39,7 +41,7 @@ pub(crate) fn list_option(
     option(id, position, selected, None, cx)
 }
 
-/// An option like [`list_option`] whose unselected fills are `fill`, for options that carry a
+/// An option like [`list_option`] whose fills are `fill`, for options that carry a
 /// tint of their own, such as the bars of a calendar.
 pub(crate) fn filled_list_option(
     id: impl Into<ElementId>,
@@ -59,8 +61,9 @@ fn option(
     cx: &App,
 ) -> Stateful<Div> {
     let theme = cx.theme();
+    let selected_fill = fill.map_or(theme.list_active, |fill| fill.selected);
     let hover_fill = if selected {
-        theme.list_active
+        selected_fill
     } else {
         fill.map_or(theme.list_hover, |fill| fill.hover)
     };
@@ -74,7 +77,7 @@ fn option(
         .aria_size_of_set(position.size)
         .aria_selected(selected)
         .when(selected, |option| {
-            option.aria_active_descendant().bg(theme.list_active)
+            option.aria_active_descendant().bg(selected_fill)
         })
         .when_some(fill.filter(|_| !selected), |option, fill| {
             option.bg(fill.rest)
