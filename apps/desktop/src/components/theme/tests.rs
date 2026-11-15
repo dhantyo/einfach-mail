@@ -3,7 +3,12 @@ use std::{fs, path::Path};
 use gpui_kit::component::{ActiveTheme as _, Theme, ThemeMode, try_parse_color};
 use gpui_kit::{Hsla, TestAppContext, WindowAppearance, px};
 
-use super::{LINUX_UI_FONTS, StatusTone, WINDOWS_UI_FONTS, install, status_colors, ui_font_family};
+use serde_json::{Map, Value, json};
+
+use super::{
+    LINUX_UI_FONTS, StatusTone, ThemeOverlay, WINDOWS_UI_FONTS, fluent_themes, install,
+    status_colors, ui_font_family,
+};
 use crate::features::AppearancePreference;
 
 fn color(hex: &str) -> Hsla {
@@ -161,16 +166,22 @@ fn fluent_shape_tokens_match_the_design(cx: &mut TestAppContext) {
 
     for mode in [ThemeMode::Light, ThemeMode::Dark] {
         cx.update(|cx| Theme::change(mode, None, cx));
-        let (radius, radius_lg, font_size) = cx.read(|cx| {
+        let (radius, radius_lg, window_radius, font_size) = cx.read(|cx| {
             (
                 cx.theme().radius,
                 cx.theme().radius_lg,
+                cx.theme().window_radius,
                 cx.theme().font_size,
             )
         });
 
         assert_eq!(radius, px(4.), "{mode:?} control radius");
         assert_eq!(radius_lg, px(8.), "{mode:?} card radius");
+        assert_eq!(
+            window_radius,
+            px(8.),
+            "{mode:?} client-decorated window radius"
+        );
         assert_eq!(font_size, px(16.), "{mode:?} keeps the 16px base font");
     }
 }
@@ -214,6 +225,75 @@ fn status_colors_tint_the_background_and_keep_the_icon_at_full_strength(cx: &mut
                 "{mode:?} {tone:?} tint"
             );
         }
+    }
+}
+
+fn json_object(value: Value) -> Map<String, Value> {
+    match value {
+        Value::Object(object) => object,
+        other => panic!("the test overlay is a JSON object, not {other}"),
+    }
+}
+
+fn colors(theme: &Map<String, Value>) -> &Map<String, Value> {
+    theme
+        .get("colors")
+        .and_then(Value::as_object)
+        .expect("every Fluent theme has a colors map")
+}
+
+fn assert_only_named_keys_changed(
+    base: &Map<String, Value>,
+    overlaid: &Map<String, Value>,
+    overlay: &Map<String, Value>,
+) {
+    let overlay_colors = overlay.get("colors").and_then(Value::as_object);
+    for (key, base_value) in base.iter().filter(|(key, _)| key.as_str() != "colors") {
+        let expected = overlay.get(key).unwrap_or(base_value);
+        assert_eq!(overlaid.get(key), Some(expected), "theme key {key}");
+    }
+    for (key, base_color) in colors(base) {
+        let expected = overlay_colors
+            .and_then(|overlay_colors| overlay_colors.get(key))
+            .unwrap_or(base_color);
+        assert_eq!(colors(overlaid).get(key), Some(expected), "color {key}");
+    }
+    assert_eq!(overlaid.len(), base.len(), "the overlay adds no theme key");
+    assert_eq!(
+        colors(overlaid).len(),
+        colors(base).len(),
+        "the overlay adds no color"
+    );
+}
+
+#[test]
+fn an_overlay_changes_only_the_keys_it_names() {
+    let overlay = ThemeOverlay {
+        light: json_object(json!({
+            "radius": 2,
+            "colors": { "primary.background": "#003E92", "ring": "#000000" }
+        })),
+        dark: json_object(json!({
+            "radius.lg": 12,
+            "colors": { "sidebar.background": "#00000000" }
+        })),
+    };
+    let [base_light, base_dark] = fluent_themes(&[]);
+    let [light, dark] = fluent_themes(&[&overlay]);
+
+    assert_only_named_keys_changed(&base_light, &light, &overlay.light);
+    assert_only_named_keys_changed(&base_dark, &dark, &overlay.dark);
+}
+
+#[test]
+fn later_overlays_win_over_earlier_ones() {
+    let [light, dark] = fluent_themes(&[
+        &ThemeOverlay::system("Noto Sans"),
+        &ThemeOverlay::system("Cantarell"),
+    ]);
+
+    for theme in [light, dark] {
+        assert_eq!(theme.get("font.family"), Some(&json!("Cantarell")));
     }
 }
 

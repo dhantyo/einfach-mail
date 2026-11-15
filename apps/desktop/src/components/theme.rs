@@ -5,8 +5,10 @@
 
 use std::rc::Rc;
 
-use gpui_kit::component::{ActiveTheme as _, Theme, ThemeSet};
+use gpui_kit::component::{ActiveTheme as _, Theme, ThemeConfig};
 use gpui_kit::{App, Hsla, SharedString};
+use serde::Deserialize;
+use serde_json::{Map, Value};
 
 const FLUENT_THEME_SET: &str = include_str!("theme/einfach-fluent.json");
 const STATUS_TINT_OPACITY: f32 = 0.12;
@@ -23,33 +25,93 @@ const LINUX_UI_FONTS: [&str; 4] = ["Noto Sans", "Cantarell", "Ubuntu", "DejaVu S
 
 /// Installs the Fluent light and dark themes as the app's themes and applies the active mode's.
 ///
-/// Both themes use the UI font family from [`ui_font_family`] for the installed fonts.
+/// Each theme is the base theme from `theme/einfach-fluent.json` with the system overlay on top,
+/// which sets the UI font family from [`ui_font_family`] for the installed fonts.
 /// Call once at startup, after GPUI Kit initializes and before any window opens. Later
 /// appearance changes only need `Theme::change`, which reloads the installed themes.
 pub(crate) fn install(cx: &mut App) {
-    let theme_set: ThemeSet = serde_json::from_str(FLUENT_THEME_SET)
-        .expect("the bundled Fluent theme set is valid JSON for GPUI Kit");
     let font_family = ui_font_family(
         None,
         platform_ui_fonts(),
         &cx.text_system().all_font_names(),
     );
-    let mut themes = theme_set.themes.into_iter().map(|mut config| {
-        config.font_family = Some(font_family.clone());
+    let system_overlay = ThemeOverlay::system(&font_family);
+    let [light, dark] = fluent_themes(&[&system_overlay]).map(|theme| {
+        let config: ThemeConfig = serde_json::from_value(Value::Object(theme))
+            .expect("the composed Fluent theme is valid for GPUI Kit");
         Rc::new(config)
     });
-    let light = themes
-        .next()
-        .expect("the Fluent theme set starts with the light theme");
-    let dark = themes
-        .next()
-        .expect("the Fluent theme set ends with the dark theme");
     Theme::update(cx, |theme| {
         theme.light_theme = light;
         theme.dark_theme = dark;
     });
     let mode = cx.theme().mode;
     Theme::change(mode, None, cx);
+}
+
+/// Theme keys that one overlay sets on the light and the dark theme.
+///
+/// Applying an overlay merges its `colors` map into the theme's map key by key and replaces
+/// every other key it names. Keys the overlay does not name keep the theme's value.
+struct ThemeOverlay {
+    light: Map<String, Value>,
+    dark: Map<String, Value>,
+}
+
+impl ThemeOverlay {
+    /// Returns the overlay that sets the UI font family on both themes.
+    fn system(font_family: &str) -> Self {
+        let keys = Map::from_iter([(
+            "font.family".to_owned(),
+            Value::String(font_family.to_owned()),
+        )]);
+        Self {
+            light: keys.clone(),
+            dark: keys,
+        }
+    }
+
+    fn apply_to(&self, light: &mut Map<String, Value>, dark: &mut Map<String, Value>) {
+        apply_theme_keys(light, &self.light);
+        apply_theme_keys(dark, &self.dark);
+    }
+}
+
+fn apply_theme_keys(theme: &mut Map<String, Value>, overlay_keys: &Map<String, Value>) {
+    for (key, value) in overlay_keys {
+        match (theme.get_mut(key), value) {
+            (Some(Value::Object(theme_colors)), Value::Object(overlay_colors))
+                if key == "colors" =>
+            {
+                theme_colors.extend(overlay_colors.clone());
+            }
+            _ => {
+                theme.insert(key.clone(), value.clone());
+            }
+        }
+    }
+}
+
+/// Returns the light and the dark Fluent theme with `overlays` applied in order.
+fn fluent_themes(overlays: &[&ThemeOverlay]) -> [Map<String, Value>; 2] {
+    let [mut light, mut dark] = base_fluent_themes();
+    for overlay in overlays {
+        overlay.apply_to(&mut light, &mut dark);
+    }
+    [light, dark]
+}
+
+/// The bundled theme set as JSON objects, before GPUI Kit parses them.
+#[derive(Deserialize)]
+struct FluentThemeSet {
+    /// The light theme, then the dark theme.
+    themes: [Map<String, Value>; 2],
+}
+
+fn base_fluent_themes() -> [Map<String, Value>; 2] {
+    let theme_set: FluentThemeSet = serde_json::from_str(FLUENT_THEME_SET)
+        .expect("the bundled Fluent theme set holds the light and then the dark theme");
+    theme_set.themes
 }
 
 fn platform_ui_fonts() -> &'static [&'static str] {
