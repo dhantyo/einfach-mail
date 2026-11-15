@@ -15,7 +15,7 @@ permissions:
 jobs:
   audit:
     name: RustSec audit
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ github.repository_owner == '1fach' && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04' }}
     steps:
       - uses: useblacksmith/checkout@v1
 

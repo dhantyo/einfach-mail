@@ -17,7 +17,7 @@ use einfach_mail_exchange_ews::ExchangeEwsProvider;
 use einfach_mail_microsoft_graph::{CallbackPort, MicrosoftGraphProvider};
 #[cfg(not(feature = "ui-preview"))]
 use einfach_mail_persistence::{SqliteAccountCacheFactory, XdgExchangeEwsAccountSettingsStore};
-use gpui_kit::component::ActiveTheme as _;
+use gpui_kit::component::{ActiveTheme as _, TITLE_BAR_HEIGHT};
 use gpui_kit::*;
 #[cfg(not(feature = "ui-preview"))]
 use std::ffi::OsStr;
@@ -26,7 +26,7 @@ use tempfile::TempDir;
 #[cfg(not(feature = "ui-preview"))]
 use uuid::Uuid;
 
-use super::{NavigationSurfaceAppearance, Workspace};
+use super::{NavigationSurfaceAppearance, PLATFORM_CAPTION, PlatformCaption, Workspace};
 use crate::components::{AppAssets, NAVIGATION_PANE_WIDTH, install_theme};
 use crate::features::{
     AccountServices, AppearanceSettingsStore, MAIL_MINIMUM_WIDTH, SetupIssue,
@@ -35,6 +35,9 @@ use crate::features::{
 };
 
 const WINDOW_MINIMUM_HEIGHT: Rems = rems(30.);
+pub(super) const WINDOW_TITLE: &str = "Einfach Mail";
+/// The Wayland and X11 application id, which matches the XDG directory prefix the app uses.
+const APP_ID: &str = "einfach-mail";
 #[cfg(not(feature = "ui-preview"))]
 const CLIENT_ID_ENV: &str = "EINFACH_MAIL_ENTRA_CLIENT_ID";
 #[cfg(not(feature = "ui-preview"))]
@@ -76,18 +79,32 @@ fn configured_navigation_surface_appearance() -> NavigationSurfaceAppearance {
 }
 
 /// The smallest window that keeps the navigation pane at full width beside Mail's narrowest
-/// layout.
-fn minimum_window_size(rem_size: Pixels) -> Size<Pixels> {
+/// layout, with room for the app's title bar where the platform `caption` is hidden.
+fn minimum_window_size(caption: PlatformCaption, rem_size: Pixels) -> Size<Pixels> {
+    let title_bar_height = match caption {
+        PlatformCaption::Drawn => px(0.),
+        PlatformCaption::Hidden => TITLE_BAR_HEIGHT,
+    };
     size(
         NAVIGATION_PANE_WIDTH.to_pixels(rem_size) + MAIL_MINIMUM_WIDTH.to_pixels(rem_size),
-        WINDOW_MINIMUM_HEIGHT.to_pixels(rem_size),
+        WINDOW_MINIMUM_HEIGHT.to_pixels(rem_size) + title_bar_height,
     )
 }
 
-fn window_options(appearance: NavigationSurfaceAppearance, rem_size: Pixels) -> WindowOptions {
+fn window_options(
+    caption: PlatformCaption,
+    appearance: NavigationSurfaceAppearance,
+    rem_size: Pixels,
+) -> WindowOptions {
     WindowOptions {
+        titlebar: Some(TitlebarOptions {
+            title: Some(WINDOW_TITLE.into()),
+            appears_transparent: caption == PlatformCaption::Hidden,
+            ..TitlebarOptions::default()
+        }),
+        app_id: Some(APP_ID.to_owned()),
         window_background: appearance.window_background(),
-        window_min_size: Some(minimum_window_size(rem_size)),
+        window_min_size: Some(minimum_window_size(caption, rem_size)),
         ..WindowOptions::default()
     }
 }
@@ -234,15 +251,19 @@ fn preview_scenario_from_environment() -> io::Result<super::preview::PreviewScen
 
 #[cfg(feature = "ui-preview")]
 fn preview_start_from_environment() -> io::Result<super::preview::PreviewStart> {
-    use super::preview::{APPEARANCE_ENV, DESTINATION_ENV, PreviewStart, WINDOW_SIZE_ENV};
+    use super::preview::{
+        APPEARANCE_ENV, DESTINATION_ENV, PreviewStart, TITLE_BAR_ENV, WINDOW_SIZE_ENV,
+    };
 
     let destination = preview_environment_value(DESTINATION_ENV)?;
     let appearance = preview_environment_value(APPEARANCE_ENV)?;
     let window_size = preview_environment_value(WINDOW_SIZE_ENV)?;
+    let title_bar = preview_environment_value(TITLE_BAR_ENV)?;
     PreviewStart::parse(
         destination.as_deref(),
         appearance.as_deref(),
         window_size.as_deref(),
+        title_bar.as_deref(),
     )
 }
 
@@ -299,7 +320,11 @@ fn open_workspace_window<P: AccountProvider + 'static>(
     #[cfg(feature = "ui-preview")]
     let preview_scenario = setup.preview_scenario;
     #[cfg_attr(not(feature = "ui-preview"), allow(unused_mut))]
-    let mut options = window_options(navigation_surface_appearance, cx.theme().font_size);
+    let mut options = window_options(
+        PLATFORM_CAPTION,
+        navigation_surface_appearance,
+        cx.theme().font_size,
+    );
     #[cfg(feature = "ui-preview")]
     if let Some(window_size) = preview_start.window_size {
         options.window_bounds = Some(WindowBounds::Windowed(Bounds::centered(
@@ -317,6 +342,9 @@ fn open_workspace_window<P: AccountProvider + 'static>(
             #[cfg(feature = "ui-preview")]
             {
                 workspace.start_at_preview_destination(preview_start.destination);
+                if preview_start.title_bar == super::preview::PreviewTitleBar::Always {
+                    workspace.force_title_bar();
+                }
                 if preview_scenario.opens_exchange_form() {
                     workspace.open_exchange_form_at_preview_start(window, cx);
                 }
@@ -347,5 +375,5 @@ fn receive_window_open_attempt(
     }
 }
 
-#[cfg(all(test, not(feature = "ui-preview")))]
+#[cfg(test)]
 mod tests;

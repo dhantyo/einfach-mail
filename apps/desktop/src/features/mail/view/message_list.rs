@@ -19,7 +19,10 @@ use super::{
     MESSAGE_LIST_CONTEXT, MESSAGE_ROW_HEIGHT, MailView, MessageListState, mail_error_message,
     message_sender, message_sender_name,
 };
-use crate::components::{AppIcon, GroupHeader, LocalClock, SetPosition, list_option};
+use crate::components::{
+    ANIMATE_SELECTION_PILL, AppIcon, GroupHeader, LocalClock, SetPosition, list_option,
+    selection_pill,
+};
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub(super) enum MessageListLayout {
@@ -211,6 +214,14 @@ impl MailView {
         .px_4()
         .aria_label(accessible_label)
         .aria_description(summary.accessible_details())
+        .children(selected.then(|| {
+            selection_pill(
+                &format!("message-option-{id}"),
+                rems(0.),
+                ANIMATE_SELECTION_PILL,
+                cx,
+            )
+        }))
         .children(unread_dot)
         .child(render_message_row_content(&summary, &id, cx))
         .when(!update_in_progress, |option| {
@@ -306,7 +317,7 @@ fn render_unread_dot(id: &str, cx: &App) -> Div {
         .absolute()
         .top_0()
         .bottom_0()
-        .left(rems(0.25))
+        .left(rems(0.3125))
         .flex()
         .items_center()
         .child(

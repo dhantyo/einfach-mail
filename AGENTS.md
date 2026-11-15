@@ -71,6 +71,7 @@ Do not claim that a feature works because it compiles. For provider work, verify
 ## Current platform and remote workflow
 
 - Focus current development and verification on Linux. Defer Windows and macOS implementation work until a later roadmap milestone.
+- The one exception is the synthetic `ui-preview` build for Windows, which lets GUI work be reviewed on Windows 11 ([ADR 0068](docs/decisions/0068-windows-ui-preview-build.md)). Keep Windows-specific code out of the preview, and do not claim Windows support for the real app from it.
 - Run applicable checks locally. Batch related changes into a reviewable unit; do not push partial changes just to start GitHub Actions.
 
 ## Keep the dependency direction

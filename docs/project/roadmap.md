@@ -46,6 +46,8 @@ Add create, update, and delete actions for one-off timed standalone appointments
 
 Add and verify Windows shell launch, authentication and credential storage, accessibility, installation, account removal, and operating-system integrations for mail and calendar use.
 
+Before M5 starts, a Windows build of the synthetic `ui-preview` lets GUI work be reviewed on Windows 11. It covers no sign-in, credential, or cache behavior. See the proposed [ADR 0068](../decisions/0068-windows-ui-preview-build.md).
+
 ## M6: macOS and broader release targets
 
 Add and verify macOS support. Evaluate other account types and release policies after the core workflow is reliable.

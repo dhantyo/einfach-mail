@@ -10,7 +10,7 @@ use crate::features::{
 };
 
 use super::Workspace;
-use super::state::{OpeningContent, WorkspaceContent, WorkspaceSection};
+use super::state::{CompactNavigation, OpeningContent, WorkspaceContent, WorkspaceSection};
 
 impl<P: einfach_mail_application::AccountProvider + 'static> Workspace<P> {
     pub(super) fn navigate_to(&mut self, section: WorkspaceSection, cx: &mut Context<Self>) {
@@ -324,6 +324,15 @@ impl<P: einfach_mail_application::AccountProvider + 'static> Workspace<P> {
             account_view.set_workspace_opening(false, cx);
             account_view.sign_out(session, cx);
         });
+        cx.notify();
+    }
+
+    /// Switches a compact window between the icon rail and the full navigation pane.
+    pub(super) fn toggle_compact_navigation(&mut self, cx: &mut Context<Self>) {
+        self.compact_navigation = match self.compact_navigation {
+            CompactNavigation::Rail => CompactNavigation::Pane,
+            CompactNavigation::Pane => CompactNavigation::Rail,
+        };
         cx.notify();
     }
 

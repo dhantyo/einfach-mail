@@ -54,6 +54,15 @@ impl WorkspaceSection {
     }
 }
 
+/// What a compact window shows in place of the navigation pane.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) enum CompactNavigation {
+    /// The icon rail. The workspace starts with it.
+    Rail,
+    /// The full pane, opened from the rail's toggle. It stays open until its toggle closes it.
+    Pane,
+}
+
 pub(super) enum WorkspaceContent {
     Accounts,
     Settings,

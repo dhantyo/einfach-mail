@@ -2,6 +2,7 @@
 
 use gpui_kit::component::{
     ActiveTheme as _, Disableable as _, Icon, Selectable as _, StyledExt as _,
+    badge::Badge,
     button::{Button, ButtonVariants as _},
 };
 use gpui_kit::{
@@ -10,10 +11,9 @@ use gpui_kit::{
 };
 
 use super::icon::AppIcon;
+use super::selection_pill::{ANIMATE_SELECTION_PILL, selection_pill};
 
 const ITEM_HEIGHT: Rems = rems(2.25);
-const PILL_WIDTH: Rems = rems(0.1875);
-const PILL_HEIGHT: Rems = rems(1.);
 /// The largest count shown in full. A larger count shows as "999+".
 const MAX_SHOWN_UNREAD: u32 = 999;
 
@@ -25,12 +25,15 @@ enum Presentation {
     Labeled,
     /// The icon fills the item and the label becomes its accessible name and tooltip.
     IconOnly,
+    /// One row of the navigation rail: the icon alone, the full width of the rail. An accent
+    /// dot marks unread mail, and the label and count become its accessible name and tooltip.
+    Rail,
 }
 
 /// A destination or folder in the navigation pane.
 ///
 /// The selected item gets a filled surface. A labeled item also gets a short accent pill, while
-/// an icon-only item shows selection with the fill alone. The pill is an overlay without
+/// an icon-only or rail item shows selection with the fill alone. The pill is an overlay without
 /// listeners, so pointer events reach the button beneath it.
 #[derive(IntoElement)]
 pub(crate) struct NavItem {
@@ -77,16 +80,30 @@ impl NavItem {
         }
     }
 
+    /// An item of the navigation rail. The label and any unread count name it for assistive
+    /// technology and a tooltip.
+    pub(crate) fn rail(
+        id: impl Into<SharedString>,
+        label: impl Into<SharedString>,
+        icon: AppIcon,
+    ) -> Self {
+        Self {
+            presentation: Presentation::Rail,
+            ..Self::new(id, label, icon)
+        }
+    }
+
     /// Marks the item as the current destination.
     pub(crate) fn selected(mut self, selected: bool) -> Self {
         self.selected = selected;
         self
     }
 
-    /// Shows how many messages are unread, when the item is labeled and the count is above 0.
+    /// Shows how many messages are unread, when the count is above 0 and the item is labeled or
+    /// in the rail.
     ///
-    /// The count trails the label, and the accessible name carries the exact number, as in
-    /// "Inbox, 12 unread".
+    /// A labeled item shows the count after its label, and a rail item shows an accent dot. The
+    /// accessible name carries the exact number, as in "Inbox, 12 unread".
     pub(crate) fn unread_count(mut self, count: Option<u32>) -> Self {
         self.unread_count = count;
         self
@@ -113,10 +130,10 @@ impl NavItem {
         self
     }
 
-    /// The unread count when the item shows one. An icon-only item has no room for it.
+    /// The unread count when the item shows one. An icon-only switcher item has no room for it.
     fn shown_unread_count(&self) -> Option<u32> {
         self.unread_count
-            .filter(|count| *count > 0 && matches!(self.presentation, Presentation::Labeled))
+            .filter(|count| *count > 0 && !matches!(self.presentation, Presentation::IconOnly))
     }
 
     /// The name assistive technology reads: the label, plus the exact unread count when shown.
@@ -140,6 +157,22 @@ impl NavItem {
         match self.presentation {
             Presentation::Labeled => button.px_3().child(self.render_labeled_content(cx)),
             Presentation::IconOnly => button.icon(Icon::new(self.icon)),
+            Presentation::Rail => button.child(self.render_rail_icon(cx)),
+        }
+    }
+
+    /// The rail icon, with an accent dot at its corner while the item counts unread mail.
+    fn render_rail_icon(&self, cx: &App) -> impl IntoElement {
+        let icon = Icon::new(self.icon).size_4();
+        match self.shown_unread_count() {
+            Some(_) => {
+                let selector = format!("{}-unread", self.id);
+                div()
+                    .debug_selector(move || selector)
+                    .child(Badge::new().dot().color(cx.theme().primary).child(icon))
+                    .into_any_element()
+            }
+            None => icon.into_any_element(),
         }
     }
 
@@ -185,7 +218,7 @@ impl NavItem {
     fn tooltip(&self) -> Option<SharedString> {
         match (self.unavailable, &self.presentation) {
             (Some(reason), _) => Some(reason.into()),
-            (None, Presentation::IconOnly) => Some(self.label.clone()),
+            (None, Presentation::IconOnly | Presentation::Rail) => Some(self.accessible_label()),
             (None, Presentation::Labeled) => None,
         }
     }
@@ -195,22 +228,7 @@ impl NavItem {
     }
 
     fn render_pill(&self, cx: &App) -> impl IntoElement {
-        let selector = format!("{}-pill", self.id);
-        div()
-            .absolute()
-            .top_0()
-            .bottom_0()
-            .left_1()
-            .flex()
-            .items_center()
-            .child(
-                div()
-                    .debug_selector(move || selector)
-                    .w(PILL_WIDTH)
-                    .h(PILL_HEIGHT)
-                    .rounded_full()
-                    .bg(cx.theme().primary),
-            )
+        selection_pill(&self.id, rems(0.25), ANIMATE_SELECTION_PILL, cx)
     }
 }
 
@@ -235,7 +253,7 @@ impl RenderOnce for NavItem {
         div()
             .relative()
             .map(|wrapper| match self.presentation {
-                Presentation::Labeled => wrapper.w_full(),
+                Presentation::Labeled | Presentation::Rail => wrapper.w_full(),
                 Presentation::IconOnly => wrapper.flex_1().min_w_0(),
             })
             .child(button)

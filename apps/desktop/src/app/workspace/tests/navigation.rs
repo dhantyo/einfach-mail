@@ -183,7 +183,7 @@ fn focus_calendar_after_mail(view: &WorkspaceTestView, context: &mut VisualTestC
     );
 }
 
-fn press_enter(context: &mut VisualTestContext) {
+pub(super) fn press_enter(context: &mut VisualTestContext) {
     let keystroke = gpui_kit::Keystroke::parse("enter").expect("Enter keystroke is valid");
     context.simulate_event(gpui_kit::KeyDownEvent {
         keystroke: keystroke.clone(),

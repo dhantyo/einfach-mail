@@ -6,7 +6,10 @@ use gpui_kit::{
 };
 use tempfile::tempdir;
 
-use crate::components::{StatusTone, install_theme, status_colors};
+use crate::components::{
+    EVENT_HOVER_TINT_OPACITY, EVENT_SELECTED_TINT_OPACITY, EVENT_TINT_OPACITY, StatusTone,
+    install_theme, status_colors,
+};
 use crate::features::{AppearancePreference, AppearanceSettingsNotice, AppearanceSettingsStore};
 
 use super::*;
@@ -448,6 +451,12 @@ fn assert_fluent_contrast(theme: &Theme, mode: ThemeMode) {
     let popover = ("popover", theme.popover);
     let hover = ("row hover", theme.list_hover);
     let selected = ("selected row", selected_row);
+    let event_surface = |opacity: f32| theme.background.blend(theme.primary.opacity(opacity));
+    let events = vec![
+        ("event at rest", event_surface(EVENT_TINT_OPACITY)),
+        ("event hover", event_surface(EVENT_HOVER_TINT_OPACITY)),
+        ("selected event", event_surface(EVENT_SELECTED_TINT_OPACITY)),
+    ];
 
     for (role, foreground, minimum, surfaces) in [
         (
@@ -463,7 +472,10 @@ fn assert_fluent_contrast(theme: &Theme, mode: ThemeMode) {
                 selected,
                 ("selected navigation item", theme.secondary_active),
                 ("subtle hover", theme.accent),
-            ],
+            ]
+            .into_iter()
+            .chain(events.clone())
+            .collect(),
         ),
         (
             "secondary text",
@@ -477,13 +489,19 @@ fn assert_fluent_contrast(theme: &Theme, mode: ThemeMode) {
                 hover,
                 selected,
                 ("group header", theme.list_head),
-            ],
+            ]
+            .into_iter()
+            .chain(events.clone())
+            .collect(),
         ),
         (
             "accent text",
             theme.primary,
             4.5,
-            vec![page, navigation, card, selected],
+            [page, navigation, card, selected]
+                .into_iter()
+                .chain(events.clone())
+                .collect(),
         ),
         (
             "text on accent",
@@ -514,6 +532,7 @@ fn assert_fluent_contrast(theme: &Theme, mode: ThemeMode) {
             vec![
                 navigation,
                 ("selected navigation item", theme.secondary_active),
+                selected,
             ],
         ),
     ] {
@@ -642,6 +661,9 @@ fn assert_status_contrast(theme: &Theme, cx: &App, mode: ThemeMode) {
 }
 
 const PAGE_CONTENT_WIDTH: Pixels = px(640.);
+/// A wide window, and the narrowest window the app allows. Beside the navigation rail only the
+/// narrowest leaves a column narrow enough for the appearance radios to wrap.
+const SETTINGS_CARD_VIEWPORT_WIDTHS: [f32; 2] = [1280., 560.];
 const PAGE_PADDING: Pixels = px(32.);
 
 fn navigation_bounds(context: &mut VisualTestContext) -> Bounds<Pixels> {
@@ -716,7 +738,7 @@ fn settings_card_and_info_bar_share_one_column_in_both_themes_and_widths(cx: &mu
                 assert_contrast_ratio(status.icon, tinted, 3.0, "notice icon");
             }
         });
-        for width in SETTINGS_VIEWPORT_WIDTHS {
+        for width in SETTINGS_CARD_VIEWPORT_WIDTHS {
             context.simulate_resize(size(px(width), px(900.)));
             context.run_until_parked();
             draw_account_view(context);
@@ -738,7 +760,7 @@ fn settings_card_and_info_bar_share_one_column_in_both_themes_and_widths(cx: &mu
     for themed_heights in card_heights.chunks(2) {
         assert!(
             themed_heights[1] > themed_heights[0],
-            "the trailing radios wrap below the card text at 640px"
+            "the trailing radios wrap below the card text in the narrowest window"
         );
     }
 }

@@ -6,8 +6,9 @@ use gpui_kit::{
     VisualTestContext, Window, div, prelude::*, px,
 };
 
-use super::{AppIcon, NavItem, PILL_HEIGHT, PILL_WIDTH, unread_count_text};
+use super::{AppIcon, NavItem, unread_count_text};
 use crate::components::NAVIGATION_PANE_WIDTH;
+use crate::components::selection_pill::{PILL_HEIGHT, PILL_WIDTH};
 
 const UNAVAILABLE_REASON: &str = "Wait for the current update to finish.";
 
@@ -60,6 +61,14 @@ impl Render for NavItemHarness {
                         NavItem::icon_only("nav-icon-counted", "Accounts", AppIcon::Accounts)
                             .unread_count(Some(3)),
                     ),
+            )
+            .child(
+                NavItem::rail("nav-rail-unread", "Projects", AppIcon::Folder)
+                    .selected(true)
+                    .unread_count(Some(12)),
+            )
+            .child(
+                NavItem::rail("nav-rail-idle", "Receipts", AppIcon::Folder).unread_count(Some(0)),
             )
     }
 }
@@ -231,5 +240,39 @@ fn a_zero_count_and_an_icon_only_item_show_no_count_and_keep_their_name(cx: &mut
     context.update(|window, _| {
         assert!(window.try_find_by_label("Deleted Items").is_some());
         assert!(window.try_find_by_label("Accounts").is_some());
+    });
+}
+
+#[gpui_kit::test]
+fn a_rail_item_marks_unread_mail_with_a_dot_and_names_the_exact_count(cx: &mut TestAppContext) {
+    let (context, _) = open_harness(cx);
+    let item = context
+        .debug_bounds("nav-rail-unread")
+        .expect("the rail item is rendered");
+    let dot = context
+        .debug_bounds("nav-rail-unread-unread")
+        .expect("a rail item with unread mail shows a dot");
+
+    assert!(dot.left() >= item.left() && dot.right() <= item.right());
+    assert!(
+        context.debug_bounds("nav-rail-unread-pill").is_none(),
+        "a rail item shows selection with its fill, not a pill"
+    );
+    context.update(|window, _| {
+        let counted = window.find_by_label("Projects, 12 unread");
+        assert_eq!(counted.role(), Some(Role::Button));
+        assert_eq!(counted.description(), Some("Projects, 12 unread"));
+    });
+}
+
+#[gpui_kit::test]
+fn a_rail_item_without_unread_mail_shows_no_dot_and_is_named_by_its_label(cx: &mut TestAppContext) {
+    let (context, _) = open_harness(cx);
+
+    assert!(context.debug_bounds("nav-rail-idle-unread").is_none());
+    context.update(|window, _| {
+        let item = window.find_by_label("Receipts");
+        assert_eq!(item.role(), Some(Role::Button));
+        assert_eq!(item.description(), Some("Receipts"));
     });
 }

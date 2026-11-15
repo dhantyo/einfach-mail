@@ -9,10 +9,12 @@ on:
 permissions:
   contents: read
 
+# Forks have no Blacksmith runners, so outside the upstream organization the jobs use a
+# GitHub-hosted runner.
 jobs:
   architecture:
     name: Workspace dependency policy
-    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
+    runs-on: ${{ github.repository_owner == '1fach' && 'blacksmith-2vcpu-ubuntu-2404-arm' || 'ubuntu-24.04' }}
     timeout-minutes: 10
     steps:
       - uses: useblacksmith/checkout@v1
@@ -36,7 +38,7 @@ jobs:
 
   msrv:
     name: Rust MSRV check 1.95.0 (Linux)
-    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
+    runs-on: ${{ github.repository_owner == '1fach' && 'blacksmith-2vcpu-ubuntu-2404-arm' || 'ubuntu-24.04' }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
@@ -53,7 +55,7 @@ jobs:
 
   rust:
     name: Rust checks (Linux)
-    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
+    runs-on: ${{ github.repository_owner == '1fach' && 'blacksmith-2vcpu-ubuntu-2404-arm' || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@v7
 

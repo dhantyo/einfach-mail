@@ -3,7 +3,12 @@ use std::{fs, path::Path};
 use gpui_kit::component::{ActiveTheme as _, Theme, ThemeMode, try_parse_color};
 use gpui_kit::{Hsla, TestAppContext, WindowAppearance, px};
 
-use super::{StatusTone, install, status_colors};
+use serde_json::{Map, Value, json};
+
+use super::{
+    LINUX_UI_FONTS, StatusTone, ThemeOverlay, WINDOWS_UI_FONTS, fluent_themes, install,
+    status_colors, ui_font_family,
+};
 use crate::features::AppearancePreference;
 
 fn color(hex: &str) -> Hsla {
@@ -53,7 +58,7 @@ impl PaletteSample {
             sidebar: color("#F3F3F3"),
             group_box: color("#FFFFFF"),
             popover: color("#FCFCFC"),
-            list_active: color("#005FB81F"),
+            list_active: color("#0000001A"),
             list_hover: color("#F0F0F0"),
             secondary_active: color("#D4D4D4"),
             info: color("#005FB8"),
@@ -76,7 +81,7 @@ impl PaletteSample {
             sidebar: color("#202020"),
             group_box: color("#2F2F2F"),
             popover: color("#2C2C2C"),
-            list_active: color("#60CDFF24"),
+            list_active: color("#FFFFFF17"),
             list_hover: color("#2F2F2F"),
             secondary_active: color("#3C3C3C"),
             info: color("#60CDFF"),
@@ -161,17 +166,40 @@ fn fluent_shape_tokens_match_the_design(cx: &mut TestAppContext) {
 
     for mode in [ThemeMode::Light, ThemeMode::Dark] {
         cx.update(|cx| Theme::change(mode, None, cx));
-        let (radius, radius_lg, font_size) = cx.read(|cx| {
+        let (radius, radius_lg, window_radius, font_size) = cx.read(|cx| {
             (
                 cx.theme().radius,
                 cx.theme().radius_lg,
+                cx.theme().window_radius,
                 cx.theme().font_size,
             )
         });
 
         assert_eq!(radius, px(4.), "{mode:?} control radius");
         assert_eq!(radius_lg, px(8.), "{mode:?} card radius");
+        assert_eq!(
+            window_radius,
+            px(8.),
+            "{mode:?} client-decorated window radius"
+        );
         assert_eq!(font_size, px(16.), "{mode:?} keeps the 16px base font");
+    }
+}
+
+#[gpui_kit::test]
+fn title_bar_shares_the_navigation_pane_surface(cx: &mut TestAppContext) {
+    installed(cx);
+
+    for mode in [ThemeMode::Light, ThemeMode::Dark] {
+        cx.update(|cx| Theme::change(mode, None, cx));
+        cx.read(|cx| {
+            let theme = cx.theme();
+            assert_eq!(theme.title_bar, theme.sidebar, "{mode:?} title bar fill");
+            assert_eq!(
+                theme.title_bar_border, theme.sidebar_border,
+                "{mode:?} title bar border"
+            );
+        });
     }
 }
 
@@ -214,6 +242,171 @@ fn status_colors_tint_the_background_and_keep_the_icon_at_full_strength(cx: &mut
                 "{mode:?} {tone:?} tint"
             );
         }
+    }
+}
+
+fn json_object(value: Value) -> Map<String, Value> {
+    match value {
+        Value::Object(object) => object,
+        other => panic!("the test overlay is a JSON object, not {other}"),
+    }
+}
+
+fn colors(theme: &Map<String, Value>) -> &Map<String, Value> {
+    theme
+        .get("colors")
+        .and_then(Value::as_object)
+        .expect("every Fluent theme has a colors map")
+}
+
+fn assert_only_named_keys_changed(
+    base: &Map<String, Value>,
+    overlaid: &Map<String, Value>,
+    overlay: &Map<String, Value>,
+) {
+    let overlay_colors = overlay.get("colors").and_then(Value::as_object);
+    for (key, base_value) in base.iter().filter(|(key, _)| key.as_str() != "colors") {
+        let expected = overlay.get(key).unwrap_or(base_value);
+        assert_eq!(overlaid.get(key), Some(expected), "theme key {key}");
+    }
+    for (key, base_color) in colors(base) {
+        let expected = overlay_colors
+            .and_then(|overlay_colors| overlay_colors.get(key))
+            .unwrap_or(base_color);
+        assert_eq!(colors(overlaid).get(key), Some(expected), "color {key}");
+    }
+    assert_eq!(overlaid.len(), base.len(), "the overlay adds no theme key");
+    assert_eq!(
+        colors(overlaid).len(),
+        colors(base).len(),
+        "the overlay adds no color"
+    );
+}
+
+#[test]
+fn an_overlay_changes_only_the_keys_it_names() {
+    let overlay = ThemeOverlay {
+        light: json_object(json!({
+            "radius": 2,
+            "colors": { "primary.background": "#003E92", "ring": "#000000" }
+        })),
+        dark: json_object(json!({
+            "radius.lg": 12,
+            "colors": { "sidebar.background": "#00000000" }
+        })),
+    };
+    let [base_light, base_dark] = fluent_themes(&[]);
+    let [light, dark] = fluent_themes(&[&overlay]);
+
+    assert_only_named_keys_changed(&base_light, &light, &overlay.light);
+    assert_only_named_keys_changed(&base_dark, &dark, &overlay.dark);
+}
+
+#[test]
+fn later_overlays_win_over_earlier_ones() {
+    let [light, dark] = fluent_themes(&[
+        &ThemeOverlay::system("Noto Sans"),
+        &ThemeOverlay::system("Cantarell"),
+    ]);
+
+    for theme in [light, dark] {
+        assert_eq!(theme.get("font.family"), Some(&json!("Cantarell")));
+    }
+}
+
+fn installed_fonts(names: &[&str]) -> Vec<String> {
+    names.iter().map(|name| (*name).to_owned()).collect()
+}
+
+#[test]
+fn ui_font_takes_the_desktop_font_when_it_is_installed() {
+    let installed = installed_fonts(&["Noto Sans", "Noto Sans Mono", "DejaVu Sans"]);
+
+    for (description, expected) in [
+        ("Noto Sans 11", "Noto Sans"),
+        ("Noto Sans Mono 10", "Noto Sans Mono"),
+        ("Noto Sans", "Noto Sans"),
+        ("Noto Sans Bold 11", "Noto Sans"),
+    ] {
+        assert_eq!(
+            ui_font_family(Some(description), &LINUX_UI_FONTS, &installed).as_ref(),
+            expected,
+            "desktop font {description:?}"
+        );
+    }
+}
+
+#[test]
+fn ui_font_skips_a_desktop_font_that_is_not_installed() {
+    let installed = installed_fonts(&["Noto Sansation", "DejaVu Sans"]);
+
+    for description in ["Adwaita Sans 11", "Noto Sans 11", ""] {
+        assert_eq!(
+            ui_font_family(Some(description), &LINUX_UI_FONTS, &installed).as_ref(),
+            "DejaVu Sans",
+            "desktop font {description:?} falls through to the platform list"
+        );
+    }
+}
+
+#[test]
+fn ui_font_takes_the_first_installed_family_of_the_platform_list() {
+    for (installed, expected) in [
+        (vec!["DejaVu Sans", "Ubuntu", "Cantarell"], "Cantarell"),
+        (vec!["DejaVu Sans", "Ubuntu"], "Ubuntu"),
+        (vec!["Inter", "DejaVu Sans"], "DejaVu Sans"),
+    ] {
+        assert_eq!(
+            ui_font_family(None, &LINUX_UI_FONTS, &installed_fonts(&installed)).as_ref(),
+            expected,
+            "installed {installed:?}"
+        );
+    }
+    assert_eq!(
+        ui_font_family(
+            None,
+            &WINDOWS_UI_FONTS,
+            &installed_fonts(&["Segoe UI", "Segoe UI Variable Text"])
+        )
+        .as_ref(),
+        "Segoe UI Variable Text"
+    );
+}
+
+#[test]
+fn ui_font_falls_back_to_the_system_font_when_nothing_matches() {
+    assert_eq!(
+        ui_font_family(None, &LINUX_UI_FONTS, &[]).as_ref(),
+        ".SystemUIFont"
+    );
+    assert_eq!(
+        ui_font_family(
+            Some("Cantarell 11"),
+            &WINDOWS_UI_FONTS,
+            &installed_fonts(&["Segoe UI"])
+        )
+        .as_ref(),
+        ".SystemUIFont"
+    );
+    assert_eq!(
+        ui_font_family(None, &[], &installed_fonts(&["Noto Sans"])).as_ref(),
+        ".SystemUIFont"
+    );
+}
+
+#[gpui_kit::test]
+fn installing_without_installed_fonts_keeps_the_system_font(cx: &mut TestAppContext) {
+    installed(cx);
+
+    for mode in [ThemeMode::Light, ThemeMode::Dark] {
+        cx.update(|cx| Theme::change(mode, None, cx));
+        let font_family = cx.read(|cx| cx.theme().font_family.clone());
+
+        assert_eq!(
+            font_family.as_ref(),
+            ".SystemUIFont",
+            "{mode:?} font family"
+        );
     }
 }
 
