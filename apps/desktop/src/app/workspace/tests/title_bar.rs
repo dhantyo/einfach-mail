@@ -2,7 +2,7 @@ use gpui_kit::component::TITLE_BAR_HEIGHT;
 use gpui_kit::test::TestWindowExt as _;
 use gpui_kit::{Decorations, Pixels, Rems, Tiling};
 
-use super::super::title_bar::app_draws_title_bar;
+use super::super::title_bar::{PLATFORM_CAPTION, PlatformCaption, app_draws_title_bar};
 use super::navigation_rail::{
     COMPACT_WIDTH, OPEN_PANE, WorkspaceTestView, navigation_bounds, open_mail_at_width, rem_pixels,
 };
@@ -23,21 +23,52 @@ fn force_title_bar(view: &WorkspaceTestView, context: &mut VisualTestContext) {
 
 #[test]
 fn the_app_draws_its_title_bar_only_in_client_decorated_windows() {
-    assert!(app_draws_title_bar(Decorations::Client {
-        tiling: Tiling::default()
-    }));
-    assert!(app_draws_title_bar(Decorations::Client {
-        tiling: Tiling::tiled()
-    }));
-    assert!(!app_draws_title_bar(Decorations::Server));
+    assert!(app_draws_title_bar(
+        PlatformCaption::Drawn,
+        Decorations::Client {
+            tiling: Tiling::default()
+        }
+    ));
+    assert!(app_draws_title_bar(
+        PlatformCaption::Drawn,
+        Decorations::Client {
+            tiling: Tiling::tiled()
+        }
+    ));
+    assert!(!app_draws_title_bar(
+        PlatformCaption::Drawn,
+        Decorations::Server
+    ));
+}
+
+#[test]
+fn the_app_draws_its_title_bar_wherever_the_platform_caption_is_hidden() {
+    for decorations in [
+        Decorations::Server,
+        Decorations::Client {
+            tiling: Tiling::default(),
+        },
+    ] {
+        assert!(
+            app_draws_title_bar(PlatformCaption::Hidden, decorations),
+            "{decorations:?}"
+        );
+    }
 }
 
 #[gpui_kit::test]
 async fn a_server_decorated_window_keeps_the_window_managers_title_bar(cx: &mut TestAppContext) {
     let (_view, context) = open_mail_at_width(cx, WIDE_WIDTH).await;
+    let draws_title_bar = app_draws_title_bar(PLATFORM_CAPTION, Decorations::Server);
 
-    assert!(context.update(|window, _| window.try_find("title-bar").is_none()));
-    assert_eq!(navigation_bounds(context).top(), px(0.));
+    assert_eq!(
+        context.update(|window, _| window.try_find("title-bar").is_some()),
+        draws_title_bar,
+        "the test window is server-decorated"
+    );
+    if !draws_title_bar {
+        assert_eq!(navigation_bounds(context).top(), px(0.));
+    }
 }
 
 /// Opens Mail `width` wide with the title bar drawn, and checks that the title bar spans the

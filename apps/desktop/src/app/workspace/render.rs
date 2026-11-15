@@ -18,7 +18,7 @@ use einfach_mail_application::AccountCacheOpenError;
 
 use super::Workspace;
 use super::state::{CompactNavigation, WorkspaceContent, WorkspaceSection};
-use super::title_bar::{app_draws_title_bar, render_title_bar};
+use super::title_bar::{PLATFORM_CAPTION, app_draws_title_bar, render_title_bar};
 
 /// The destinations in menu order.
 const DESTINATIONS: [WorkspaceSection; 4] = [
@@ -341,8 +341,8 @@ impl<P: einfach_mail_application::AccountProvider + 'static> Workspace<P> {
 impl<P: einfach_mail_application::AccountProvider + 'static> Render for Workspace<P> {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let colors = cx.theme().semantic_tokens().colors;
-        let draws_title_bar =
-            self.title_bar_forced || app_draws_title_bar(window.window_decorations());
+        let draws_title_bar = self.title_bar_forced
+            || app_draws_title_bar(PLATFORM_CAPTION, window.window_decorations());
         div()
             .id("workspace")
             .size_full()

@@ -27,6 +27,7 @@ pub(crate) use state::NavigationSurfaceAppearance;
 use state::{CompactNavigation, WorkspaceContent};
 #[cfg(test)]
 pub(crate) use test_access::{WorkspaceTestContent, WorkspaceTestSection};
+pub(crate) use title_bar::{PLATFORM_CAPTION, PlatformCaption};
 
 pub(crate) struct Workspace<P: AccountProvider + 'static> {
     account_view: Entity<AccountView<P>>,
