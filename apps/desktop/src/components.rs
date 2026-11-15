@@ -24,7 +24,7 @@ pub(super) use local_time::LocalClock;
 pub(super) use nav_item::NavItem;
 pub(super) use page::Page;
 pub(super) use pane_header::PaneHeader;
-pub(super) use selection_pill::selection_pill;
+pub(super) use selection_pill::{ANIMATE_SELECTION_PILL, selection_pill};
 pub(super) use settings_card::SettingsCard;
 pub(super) use shell::{NAVIGATION_PANE_WIDTH, NAVIGATION_RAIL_WIDTH};
 pub(super) use sync_age::relative_age_label;

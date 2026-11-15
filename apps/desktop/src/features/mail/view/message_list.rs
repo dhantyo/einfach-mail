@@ -20,7 +20,8 @@ use super::{
     message_sender, message_sender_name,
 };
 use crate::components::{
-    AppIcon, GroupHeader, LocalClock, SetPosition, list_option, selection_pill,
+    ANIMATE_SELECTION_PILL, AppIcon, GroupHeader, LocalClock, SetPosition, list_option,
+    selection_pill,
 };
 
 #[derive(Clone, Copy, Eq, PartialEq)]
@@ -213,7 +214,14 @@ impl MailView {
         .px_4()
         .aria_label(accessible_label)
         .aria_description(summary.accessible_details())
-        .children(selected.then(|| selection_pill(&format!("message-option-{id}"), rems(0.), cx)))
+        .children(selected.then(|| {
+            selection_pill(
+                &format!("message-option-{id}"),
+                rems(0.),
+                ANIMATE_SELECTION_PILL,
+                cx,
+            )
+        }))
         .children(unread_dot)
         .child(render_message_row_content(&summary, &id, cx))
         .when(!update_in_progress, |option| {

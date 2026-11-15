@@ -11,7 +11,7 @@ use gpui_kit::{
 };
 
 use super::icon::AppIcon;
-use super::selection_pill::selection_pill;
+use super::selection_pill::{ANIMATE_SELECTION_PILL, selection_pill};
 
 const ITEM_HEIGHT: Rems = rems(2.25);
 /// The largest count shown in full. A larger count shows as "999+".
@@ -228,7 +228,7 @@ impl NavItem {
     }
 
     fn render_pill(&self, cx: &App) -> impl IntoElement {
-        selection_pill(&self.id, rems(0.25), cx)
+        selection_pill(&self.id, rems(0.25), ANIMATE_SELECTION_PILL, cx)
     }
 }
 
