@@ -1,14 +1,15 @@
-use super::{PreviewDestination, PreviewStart, PreviewWindowSize};
+use super::{PreviewDestination, PreviewStart, PreviewTitleBar, PreviewWindowSize};
 use crate::features::AppearancePreference;
 
 #[test]
 fn omitted_choices_keep_the_default_preview() {
     assert_eq!(
-        PreviewStart::parse(None, None, None).expect("defaults are valid"),
+        PreviewStart::parse(None, None, None, None).expect("defaults are valid"),
         PreviewStart {
             destination: PreviewDestination::Accounts,
             appearance: None,
             window_size: None,
+            title_bar: PreviewTitleBar::Platform,
         }
     );
 }
@@ -23,14 +24,14 @@ fn every_documented_choice_parses() {
         ("settings", PreviewDestination::Settings),
     ] {
         assert_eq!(
-            PreviewStart::parse(Some(value), None, None)
+            PreviewStart::parse(Some(value), None, None, None)
                 .expect("documented destination is valid")
                 .destination,
             destination
         );
     }
     assert_eq!(
-        PreviewStart::parse(None, Some("dark"), Some("900x700")).expect("choices are valid"),
+        PreviewStart::parse(None, Some("dark"), Some("900x700"), None).expect("choices are valid"),
         PreviewStart {
             destination: PreviewDestination::Accounts,
             appearance: Some(AppearancePreference::Dark),
@@ -38,10 +39,11 @@ fn every_documented_choice_parses() {
                 width: 900,
                 height: 700,
             }),
+            title_bar: PreviewTitleBar::Platform,
         }
     );
     assert_eq!(
-        PreviewStart::parse(None, Some("light"), None)
+        PreviewStart::parse(None, Some("light"), None, None)
             .expect("light is valid")
             .appearance,
         Some(AppearancePreference::Light)
@@ -56,7 +58,7 @@ fn unknown_choices_name_the_variable_and_the_accepted_values() {
         ((None, Some("system")), "EINFACH_MAIL_UI_PREVIEW_APPEARANCE"),
         ((None, Some("Dark")), "EINFACH_MAIL_UI_PREVIEW_APPEARANCE"),
     ] {
-        let error = PreviewStart::parse(destination, appearance, None)
+        let error = PreviewStart::parse(destination, appearance, None, None)
             .expect_err("unknown preview choice is rejected");
         assert!(
             error.to_string().contains(variable),
@@ -81,7 +83,7 @@ fn window_sizes_need_two_positive_bounded_edges() {
         "16385x700",
         " 900x700",
     ] {
-        let error = PreviewStart::parse(None, None, Some(value))
+        let error = PreviewStart::parse(None, None, Some(value), None)
             .expect_err("malformed window size is rejected");
         assert!(
             error
@@ -91,12 +93,34 @@ fn window_sizes_need_two_positive_bounded_edges() {
         );
     }
     assert_eq!(
-        PreviewStart::parse(None, None, Some("16384x1"))
+        PreviewStart::parse(None, None, Some("16384x1"), None)
             .expect("edge limits are inclusive")
             .window_size,
         Some(PreviewWindowSize {
             width: 16_384,
             height: 1,
         })
+    );
+}
+
+#[test]
+fn title_bar_choice_parses_and_rejects_other_values() {
+    for (value, title_bar) in [
+        ("platform", PreviewTitleBar::Platform),
+        ("always", PreviewTitleBar::Always),
+    ] {
+        assert_eq!(
+            PreviewStart::parse(None, None, None, Some(value))
+                .expect("documented title bar choice is valid")
+                .title_bar,
+            title_bar
+        );
+    }
+    let error = PreviewStart::parse(None, None, None, Some("Always"))
+        .expect_err("unknown title bar choice is rejected");
+    assert!(
+        error
+            .to_string()
+            .contains("EINFACH_MAIL_UI_PREVIEW_TITLE_BAR")
     );
 }

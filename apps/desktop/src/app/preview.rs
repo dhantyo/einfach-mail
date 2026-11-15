@@ -34,7 +34,8 @@ use einfach_mail_domain::{
 };
 
 pub(crate) use start::{
-    APPEARANCE_ENV, DESTINATION_ENV, PreviewDestination, PreviewStart, WINDOW_SIZE_ENV,
+    APPEARANCE_ENV, DESTINATION_ENV, PreviewDestination, PreviewStart, PreviewTitleBar,
+    TITLE_BAR_ENV, WINDOW_SIZE_ENV,
 };
 
 pub(super) fn account_services(

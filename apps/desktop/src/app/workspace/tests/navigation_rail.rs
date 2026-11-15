@@ -10,18 +10,18 @@ use crate::features::MAIL_SPLIT_WINDOW_WIDTH;
 use crate::test_support::mail::{OfflineProvider, fixture};
 use crate::test_support::wait_for_ui_condition;
 
-const COMPACT_WIDTH: Pixels = px(640.);
-const OPEN_PANE: &str = "Open navigation pane";
+pub(super) const COMPACT_WIDTH: Pixels = px(640.);
+pub(super) const OPEN_PANE: &str = "Open navigation pane";
 const CLOSE_PANE: &str = "Close navigation pane";
 /// The rail's controls in tab order while Mail shows the synthetic Inbox and Archive.
 const MAIL_RAIL_TAB_ORDER: [&str; 8] = [
     OPEN_PANE, "New mail", "Inbox", "Archive", "Mail", "Calendar", "Accounts", "Settings",
 ];
 
-type WorkspaceTestView = gpui_kit::Entity<Workspace<TestProvider>>;
+pub(super) type WorkspaceTestView = gpui_kit::Entity<Workspace<TestProvider>>;
 
 /// Opens Mail, with the synthetic Inbox and Archive, in a window `width` wide.
-async fn open_mail_at_width(
+pub(super) async fn open_mail_at_width(
     cx: &mut TestAppContext,
     width: Pixels,
 ) -> (WorkspaceTestView, &mut VisualTestContext) {
@@ -61,7 +61,7 @@ async fn open_mail_at_width(
     (view, context)
 }
 
-fn navigation_bounds(context: &mut VisualTestContext) -> Bounds<Pixels> {
+pub(super) fn navigation_bounds(context: &mut VisualTestContext) -> Bounds<Pixels> {
     context.update(|window, _| window.find_by_label("Main navigation").bounds())
 }
 
@@ -73,7 +73,7 @@ fn shows_account_identity(context: &mut VisualTestContext) -> bool {
     })
 }
 
-fn rem_pixels(context: &mut VisualTestContext, width: gpui_kit::Rems) -> Pixels {
+pub(super) fn rem_pixels(context: &mut VisualTestContext, width: gpui_kit::Rems) -> Pixels {
     let rem_size = context.update(|window, _| window.rem_size());
     width.to_pixels(rem_size)
 }

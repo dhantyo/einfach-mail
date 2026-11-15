@@ -30,3 +30,4 @@ mod navigation_rail;
 #[cfg(feature = "ui-preview")]
 mod preview_start;
 mod session_lifecycle;
+mod title_bar;

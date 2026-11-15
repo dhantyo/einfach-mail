@@ -187,6 +187,23 @@ fn fluent_shape_tokens_match_the_design(cx: &mut TestAppContext) {
 }
 
 #[gpui_kit::test]
+fn title_bar_shares_the_navigation_pane_surface(cx: &mut TestAppContext) {
+    installed(cx);
+
+    for mode in [ThemeMode::Light, ThemeMode::Dark] {
+        cx.update(|cx| Theme::change(mode, None, cx));
+        cx.read(|cx| {
+            let theme = cx.theme();
+            assert_eq!(theme.title_bar, theme.sidebar, "{mode:?} title bar fill");
+            assert_eq!(
+                theme.title_bar_border, theme.sidebar_border,
+                "{mode:?} title bar border"
+            );
+        });
+    }
+}
+
+#[gpui_kit::test]
 fn selected_row_fill_stays_translucent_after_gpui_kit_clamps_it(cx: &mut TestAppContext) {
     installed(cx);
 

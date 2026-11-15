@@ -5,6 +5,7 @@ mod actions;
 mod preview_start;
 mod render;
 mod state;
+mod title_bar;
 
 #[cfg(test)]
 mod test_access;
@@ -47,6 +48,7 @@ pub(crate) struct Workspace<P: AccountProvider + 'static> {
     settings_navigation_focus: FocusHandle,
     compact_navigation: CompactNavigation,
     compact_navigation_toggle_focus: FocusHandle,
+    title_bar_forced: bool,
     task: Option<Task<()>>,
     #[cfg(feature = "ui-preview")]
     preview_start: Option<preview_start::PreviewStartStep>,
@@ -97,6 +99,7 @@ impl<P: AccountProvider + 'static> Workspace<P> {
             settings_navigation_focus: cx.focus_handle().tab_stop(true),
             compact_navigation: CompactNavigation::Rail,
             compact_navigation_toggle_focus: cx.focus_handle().tab_stop(true),
+            title_bar_forced: false,
             task: None,
             #[cfg(feature = "ui-preview")]
             preview_start: None,
@@ -178,5 +181,12 @@ impl<P: AccountProvider + 'static> Workspace<P> {
     ) -> Self {
         self.navigation_surface_appearance = appearance;
         self
+    }
+
+    /// Draws the app's title bar whatever the window's decorations, so tests and preview captures
+    /// can show it on displays that always grant server decorations.
+    #[cfg(any(test, feature = "ui-preview"))]
+    pub(crate) fn force_title_bar(&mut self) {
+        self.title_bar_forced = true;
     }
 }

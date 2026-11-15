@@ -1,5 +1,5 @@
 use gpui_kit::component::{
-    ActiveTheme, ColorTokens, Disableable, Icon, StyledExt,
+    ActiveTheme, ColorTokens, Disableable, Icon, StyledExt, TitleBar,
     avatar::Avatar,
     button::{Button, ButtonVariants as _},
 };
@@ -18,6 +18,7 @@ use einfach_mail_application::AccountCacheOpenError;
 
 use super::Workspace;
 use super::state::{CompactNavigation, WorkspaceContent, WorkspaceSection};
+use super::title_bar::{app_draws_title_bar, render_title_bar};
 
 /// The destinations in menu order.
 const DESTINATIONS: [WorkspaceSection; 4] = [
@@ -77,6 +78,14 @@ impl<P: einfach_mail_application::AccountProvider + 'static> Workspace<P> {
             .child(self.render_contextual_rail(cx))
             .child(self.render_destination_rail(cx))
             .into_any_element()
+    }
+
+    /// The title bar on the theme's title-bar surface, made translucent with the navigation pane.
+    fn render_title_bar(&self, cx: &App) -> TitleBar {
+        let surface = self
+            .navigation_surface_appearance
+            .navigation_background(cx.theme().tokens.title_bar.into());
+        render_title_bar(surface, cx)
     }
 
     fn render_navigation_surface(
@@ -332,19 +341,32 @@ impl<P: einfach_mail_application::AccountProvider + 'static> Workspace<P> {
 impl<P: einfach_mail_application::AccountProvider + 'static> Render for Workspace<P> {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let colors = cx.theme().semantic_tokens().colors;
+        let draws_title_bar =
+            self.title_bar_forced || app_draws_title_bar(window.window_decorations());
         div()
             .id("workspace")
             .size_full()
             .flex()
-            .child(self.render_navigation(window, cx))
+            .flex_col()
+            .when(draws_title_bar, |workspace| {
+                workspace.child(self.render_title_bar(cx))
+            })
             .child(
                 div()
                     .flex_1()
-                    .min_w_0()
                     .min_h_0()
-                    .h_full()
-                    .overflow_hidden()
-                    .child(self.render_workspace_content(colors, cx)),
+                    .w_full()
+                    .flex()
+                    .child(self.render_navigation(window, cx))
+                    .child(
+                        div()
+                            .flex_1()
+                            .min_w_0()
+                            .min_h_0()
+                            .h_full()
+                            .overflow_hidden()
+                            .child(self.render_workspace_content(colors, cx)),
+                    ),
             )
             .into_any_element()
     }

@@ -35,7 +35,7 @@ use crate::features::{
 };
 
 const WINDOW_MINIMUM_HEIGHT: Rems = rems(30.);
-const WINDOW_TITLE: &str = "Einfach Mail";
+pub(super) const WINDOW_TITLE: &str = "Einfach Mail";
 /// The Wayland and X11 application id, which matches the XDG directory prefix the app uses.
 const APP_ID: &str = "einfach-mail";
 #[cfg(not(feature = "ui-preview"))]
@@ -242,15 +242,19 @@ fn preview_scenario_from_environment() -> io::Result<super::preview::PreviewScen
 
 #[cfg(feature = "ui-preview")]
 fn preview_start_from_environment() -> io::Result<super::preview::PreviewStart> {
-    use super::preview::{APPEARANCE_ENV, DESTINATION_ENV, PreviewStart, WINDOW_SIZE_ENV};
+    use super::preview::{
+        APPEARANCE_ENV, DESTINATION_ENV, PreviewStart, TITLE_BAR_ENV, WINDOW_SIZE_ENV,
+    };
 
     let destination = preview_environment_value(DESTINATION_ENV)?;
     let appearance = preview_environment_value(APPEARANCE_ENV)?;
     let window_size = preview_environment_value(WINDOW_SIZE_ENV)?;
+    let title_bar = preview_environment_value(TITLE_BAR_ENV)?;
     PreviewStart::parse(
         destination.as_deref(),
         appearance.as_deref(),
         window_size.as_deref(),
+        title_bar.as_deref(),
     )
 }
 
@@ -325,6 +329,9 @@ fn open_workspace_window<P: AccountProvider + 'static>(
             #[cfg(feature = "ui-preview")]
             {
                 workspace.start_at_preview_destination(preview_start.destination);
+                if preview_start.title_bar == super::preview::PreviewTitleBar::Always {
+                    workspace.force_title_bar();
+                }
                 if preview_scenario.opens_exchange_form() {
                     workspace.open_exchange_form_at_preview_start(window, cx);
                 }

@@ -101,6 +101,7 @@ To open the preview on a chosen view, appearance, and window size, set these dev
 | `EINFACH_MAIL_UI_PREVIEW_DESTINATION` | `accounts` (default), `mail`, `mail-reader`, `calendar`, `settings` | Opens that view once the preview account is restored. `mail-reader` also opens the first synthetic message. |
 | `EINFACH_MAIL_UI_PREVIEW_APPEARANCE` | `light`, `dark` | Seeds the temporary preferences file. Without it, the preview follows the system appearance. |
 | `EINFACH_MAIL_UI_PREVIEW_WINDOW_SIZE` | `WIDTHxHEIGHT`, for example `900x700` | Sets the window size in logical pixels. |
+| `EINFACH_MAIL_UI_PREVIEW_TITLE_BAR` | `platform` (default), `always` | `always` draws the app's title bar also under server-side decorations, such as X11 and Xvfb, so captures can show it. The window manager's caption buttons stay its own there. |
 
 On Hyprland, `scripts/preview-shots.sh` captures every view in light and dark with these variables. It builds the preview, opens one real window at a time on the active workspace, floats and sizes it by process ID because the window has no class or title, captures it with `grim`, and closes it. It needs `hyprctl`, `grim`, and `jq`. Leave the display alone while it runs.
 

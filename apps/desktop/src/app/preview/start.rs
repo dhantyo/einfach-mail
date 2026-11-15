@@ -10,6 +10,8 @@ pub(crate) const DESTINATION_ENV: &str = "EINFACH_MAIL_UI_PREVIEW_DESTINATION";
 pub(crate) const APPEARANCE_ENV: &str = "EINFACH_MAIL_UI_PREVIEW_APPEARANCE";
 /// Environment variable that picks the preview window size as `WIDTHxHEIGHT`.
 pub(crate) const WINDOW_SIZE_ENV: &str = "EINFACH_MAIL_UI_PREVIEW_WINDOW_SIZE";
+/// Environment variable that makes the preview draw its title bar under server decorations.
+pub(crate) const TITLE_BAR_ENV: &str = "EINFACH_MAIL_UI_PREVIEW_TITLE_BAR";
 
 const MAX_WINDOW_EDGE: u32 = 16_384;
 
@@ -23,6 +25,16 @@ pub(crate) enum PreviewDestination {
     MailReader,
     Calendar,
     Settings,
+}
+
+/// When the preview draws the app's title bar.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub(crate) enum PreviewTitleBar {
+    /// Where the app's title-bar rule draws it.
+    #[default]
+    Platform,
+    /// Also where the window manager draws its own, so captures on X11 can show the bar.
+    Always,
 }
 
 /// Window size in logical pixels.
@@ -40,6 +52,7 @@ pub(crate) struct PreviewStart {
     pub(crate) appearance: Option<AppearancePreference>,
     /// `None` keeps the platform's default window size.
     pub(crate) window_size: Option<PreviewWindowSize>,
+    pub(crate) title_bar: PreviewTitleBar,
 }
 
 impl PreviewStart {
@@ -47,6 +60,7 @@ impl PreviewStart {
         destination: Option<&str>,
         appearance: Option<&str>,
         window_size: Option<&str>,
+        title_bar: Option<&str>,
     ) -> io::Result<Self> {
         Ok(Self {
             destination: destination
@@ -55,6 +69,10 @@ impl PreviewStart {
                 .unwrap_or_default(),
             appearance: appearance.map(parse_appearance).transpose()?,
             window_size: window_size.map(parse_window_size).transpose()?,
+            title_bar: title_bar
+                .map(parse_title_bar)
+                .transpose()?
+                .unwrap_or_default(),
         })
     }
 }
@@ -79,6 +97,14 @@ fn parse_appearance(value: &str) -> io::Result<AppearancePreference> {
         "light" => Ok(AppearancePreference::Light),
         "dark" => Ok(AppearancePreference::Dark),
         _ => Err(invalid_value(APPEARANCE_ENV, value, "light or dark")),
+    }
+}
+
+fn parse_title_bar(value: &str) -> io::Result<PreviewTitleBar> {
+    match value {
+        "platform" => Ok(PreviewTitleBar::Platform),
+        "always" => Ok(PreviewTitleBar::Always),
+        _ => Err(invalid_value(TITLE_BAR_ENV, value, "platform or always")),
     }
 }
 
