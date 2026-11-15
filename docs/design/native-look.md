@@ -235,6 +235,8 @@ Record each unit's evidence in the progress log below, and separate automated fr
 
 Each unit appends one line when it merges: date, unit, PR, and verification evidence.
 
+- 2026-11-15, N2, local commit on the fork (no PR yet): `window_options` sets the title "Einfach Mail" and the app id `einfach-mail`. Automated: `window_names_the_app_for_the_taskbar_and_the_compositor` runs in the normal and the `ui-preview` test builds (the bootstrap tests now compile in both; the tests that need the real providers stay normal-build only); fmt, Clippy, and desktop tests pass in both builds. Manual: none; Hyprland `hyprctl clients -j` and the Windows taskbar and Alt+Tab are not checked.
+
 ## Sources
 
 - [ADR 0059: Use a shared, adaptive mail and calendar workspace](../decisions/0059-native-mail-and-calendar-workspace.md)

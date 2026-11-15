@@ -35,6 +35,9 @@ use crate::features::{
 };
 
 const WINDOW_MINIMUM_HEIGHT: Rems = rems(30.);
+const WINDOW_TITLE: &str = "Einfach Mail";
+/// The Wayland and X11 application id, which matches the XDG directory prefix the app uses.
+const APP_ID: &str = "einfach-mail";
 #[cfg(not(feature = "ui-preview"))]
 const CLIENT_ID_ENV: &str = "EINFACH_MAIL_ENTRA_CLIENT_ID";
 #[cfg(not(feature = "ui-preview"))]
@@ -86,6 +89,11 @@ fn minimum_window_size(rem_size: Pixels) -> Size<Pixels> {
 
 fn window_options(appearance: NavigationSurfaceAppearance, rem_size: Pixels) -> WindowOptions {
     WindowOptions {
+        titlebar: Some(TitlebarOptions {
+            title: Some(WINDOW_TITLE.into()),
+            ..TitlebarOptions::default()
+        }),
+        app_id: Some(APP_ID.to_owned()),
         window_background: appearance.window_background(),
         window_min_size: Some(minimum_window_size(rem_size)),
         ..WindowOptions::default()
@@ -347,5 +355,5 @@ fn receive_window_open_attempt(
     }
 }
 
-#[cfg(all(test, not(feature = "ui-preview")))]
+#[cfg(test)]
 mod tests;

@@ -1,14 +1,28 @@
+#[cfg(not(feature = "ui-preview"))]
 use std::ffi::OsStr;
 
-use super::{
-    NavigationSurfaceAppearance, SetupIssue, configured_callback_port,
-    navigation_surface_appearance_from_environment, window_options,
-};
+use super::{NavigationSurfaceAppearance, window_options};
+#[cfg(not(feature = "ui-preview"))]
+use super::{SetupIssue, configured_callback_port, navigation_surface_appearance_from_environment};
 use crate::components::NAVIGATION_PANE_WIDTH;
 use crate::features::MAIL_MINIMUM_WIDTH;
+#[cfg(not(feature = "ui-preview"))]
 use einfach_mail_microsoft_graph::CallbackPort;
 use gpui_kit::{WindowBackgroundAppearance, px};
 
+#[test]
+fn window_names_the_app_for_the_taskbar_and_the_compositor() {
+    let options = window_options(NavigationSurfaceAppearance::Opaque, px(16.));
+    let title = options
+        .titlebar
+        .and_then(|titlebar| titlebar.title)
+        .expect("the main window sets a title");
+
+    assert_eq!(title.as_ref(), "Einfach Mail");
+    assert_eq!(options.app_id.as_deref(), Some("einfach-mail"));
+}
+
+#[cfg(not(feature = "ui-preview"))]
 #[test]
 fn desktop_auth_requires_a_registered_fixed_loopback_port() {
     assert_eq!(
@@ -29,6 +43,7 @@ fn desktop_auth_requires_a_registered_fixed_loopback_port() {
     ));
 }
 
+#[cfg(not(feature = "ui-preview"))]
 #[test]
 fn navigation_translucency_requires_explicit_wayland_opt_in() {
     assert_eq!(
