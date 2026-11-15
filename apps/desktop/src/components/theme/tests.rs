@@ -3,7 +3,7 @@ use std::{fs, path::Path};
 use gpui_kit::component::{ActiveTheme as _, Theme, ThemeMode, try_parse_color};
 use gpui_kit::{Hsla, TestAppContext, WindowAppearance, px};
 
-use super::{StatusTone, install, status_colors};
+use super::{LINUX_UI_FONTS, StatusTone, WINDOWS_UI_FONTS, install, status_colors, ui_font_family};
 use crate::features::AppearancePreference;
 
 fn color(hex: &str) -> Hsla {
@@ -214,6 +214,102 @@ fn status_colors_tint_the_background_and_keep_the_icon_at_full_strength(cx: &mut
                 "{mode:?} {tone:?} tint"
             );
         }
+    }
+}
+
+fn installed_fonts(names: &[&str]) -> Vec<String> {
+    names.iter().map(|name| (*name).to_owned()).collect()
+}
+
+#[test]
+fn ui_font_takes_the_desktop_font_when_it_is_installed() {
+    let installed = installed_fonts(&["Noto Sans", "Noto Sans Mono", "DejaVu Sans"]);
+
+    for (description, expected) in [
+        ("Noto Sans 11", "Noto Sans"),
+        ("Noto Sans Mono 10", "Noto Sans Mono"),
+        ("Noto Sans", "Noto Sans"),
+        ("Noto Sans Bold 11", "Noto Sans"),
+    ] {
+        assert_eq!(
+            ui_font_family(Some(description), &LINUX_UI_FONTS, &installed).as_ref(),
+            expected,
+            "desktop font {description:?}"
+        );
+    }
+}
+
+#[test]
+fn ui_font_skips_a_desktop_font_that_is_not_installed() {
+    let installed = installed_fonts(&["Noto Sansation", "DejaVu Sans"]);
+
+    for description in ["Adwaita Sans 11", "Noto Sans 11", ""] {
+        assert_eq!(
+            ui_font_family(Some(description), &LINUX_UI_FONTS, &installed).as_ref(),
+            "DejaVu Sans",
+            "desktop font {description:?} falls through to the platform list"
+        );
+    }
+}
+
+#[test]
+fn ui_font_takes_the_first_installed_family_of_the_platform_list() {
+    for (installed, expected) in [
+        (vec!["DejaVu Sans", "Ubuntu", "Cantarell"], "Cantarell"),
+        (vec!["DejaVu Sans", "Ubuntu"], "Ubuntu"),
+        (vec!["Inter", "DejaVu Sans"], "DejaVu Sans"),
+    ] {
+        assert_eq!(
+            ui_font_family(None, &LINUX_UI_FONTS, &installed_fonts(&installed)).as_ref(),
+            expected,
+            "installed {installed:?}"
+        );
+    }
+    assert_eq!(
+        ui_font_family(
+            None,
+            &WINDOWS_UI_FONTS,
+            &installed_fonts(&["Segoe UI", "Segoe UI Variable Text"])
+        )
+        .as_ref(),
+        "Segoe UI Variable Text"
+    );
+}
+
+#[test]
+fn ui_font_falls_back_to_the_system_font_when_nothing_matches() {
+    assert_eq!(
+        ui_font_family(None, &LINUX_UI_FONTS, &[]).as_ref(),
+        ".SystemUIFont"
+    );
+    assert_eq!(
+        ui_font_family(
+            Some("Cantarell 11"),
+            &WINDOWS_UI_FONTS,
+            &installed_fonts(&["Segoe UI"])
+        )
+        .as_ref(),
+        ".SystemUIFont"
+    );
+    assert_eq!(
+        ui_font_family(None, &[], &installed_fonts(&["Noto Sans"])).as_ref(),
+        ".SystemUIFont"
+    );
+}
+
+#[gpui_kit::test]
+fn installing_without_installed_fonts_keeps_the_system_font(cx: &mut TestAppContext) {
+    installed(cx);
+
+    for mode in [ThemeMode::Light, ThemeMode::Dark] {
+        cx.update(|cx| Theme::change(mode, None, cx));
+        let font_family = cx.read(|cx| cx.theme().font_family.clone());
+
+        assert_eq!(
+            font_family.as_ref(),
+            ".SystemUIFont",
+            "{mode:?} font family"
+        );
     }
 }
 

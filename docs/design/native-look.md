@@ -25,6 +25,14 @@ The owner can change these. Record any change here and in ADR 0069.
 - The Windows caption buttons come from GPUI Kit's `TitleBar` first. Exact Windows 11 caption geometry is a later, conditional unit (N11).
 - High contrast uses two Einfach high-contrast variants on both platforms first. Reading the Windows contrast-theme system colours is a later step.
 
+## Decisions while the owner was away
+
+The owner can reverse these. Each was made while implementing N2 to N4.
+
+- **N3 found cause 1 already mitigated by GPUI Kit 0.9.1.** `Theme::edit` calls `resolve_default_font` (`gpui-component-0.9.1/src/theme/system_font.rs:32-49`, `theme/mod.rs:336-340`), which replaces `.SystemUIFont` on the theme with the installed family GPUI's fallback stack resolved it to. In this repository's Linux container the build before N3 already drew semibold text in DejaVu Sans Bold. N3 still lands the chooser: it makes the family an explicit, ordered choice instead of the fallback stack's order, which puts Ubuntu and the variable Adwaita Sans first. The Fluent review's regular-weight captures were not reproduced here.
+- **N3 passes no desktop font yet.** The chooser takes the portal's `font-name` string and is tested with it, but startup passes none until N7 adds the `SystemLook` reader. Until then Linux uses the platform list.
+- **N4 builds no `SystemLook` type.** The install function composes the base theme, a list of variant overlays that is empty until N9 and N10, and a system overlay built in code that holds only the UI font family. N7 adds the snapshot type and its inputs.
+
 ## Findings
 
 Paths below are relative to the Cargo registry source directory (`~/.cargo/registry/src/index.crates.io-*/`). Versions are the ones in `Cargo.lock`: `gpui-kit` 0.9.1, `gpui-component` 0.9.1, `gpui-base` 0.9.1, `gpui-pre` 0.3.12 with its Linux, Windows, and wgpu backends, and `ashpd` 0.13.13.
@@ -236,6 +244,7 @@ Record each unit's evidence in the progress log below, and separate automated fr
 Each unit appends one line when it merges: date, unit, PR, and verification evidence.
 
 - 2026-11-15, N2, local commit on the fork (no PR yet): `window_options` sets the title "Einfach Mail" and the app id `einfach-mail`. Automated: `window_names_the_app_for_the_taskbar_and_the_compositor` runs in the normal and the `ui-preview` test builds (the bootstrap tests now compile in both; the tests that need the real providers stay normal-build only); fmt, Clippy, and desktop tests pass in both builds. Manual: none; Hyprland `hyprctl clients -j` and the Windows taskbar and Alt+Tab are not checked.
+- 2026-11-15, N3, local commit on the fork (no PR yet): `install` sets `font.family` on both Fluent themes to the first installed family of the desktop font (none passed until N7), "Segoe UI Variable Text" on Windows, or "Noto Sans", "Cantarell", "Ubuntu", "DejaVu Sans" on Linux, else `.SystemUIFont`. Automated: four pure chooser tests (portal string, missing desktop font, platform lists, empty fallback) and a headless test that an empty font list keeps `.SystemUIFont` without panicking; fmt, Clippy, and desktop tests pass in both builds. Manual: the `ui-preview` build on Xvfb at 1280 by 800 picked DejaVu Sans (this container has no Noto Sans, Cantarell, or Ubuntu); unread rows, the page title, group and pane headers render bold in light and dark ([light](../project/evidence/native-font-mail-light.png), [dark](../project/evidence/native-font-mail-dark.png)). A capture before N3 looked the same, see the decisions above. Windows and Segoe UI Variable are not checked.
 
 ## Sources
 
